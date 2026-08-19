@@ -5,6 +5,7 @@ Configures consistent JSON logging for production and human-readable logs for de
 
 import logging
 import sys
+from typing import Any
 
 import structlog
 
@@ -21,7 +22,6 @@ def setup_logging() -> None:
         level=log_level,
     )
 
-    from typing import Any
     processors: list[Any] = [
         structlog.contextvars.merge_contextvars,
         structlog.processors.add_log_level,
