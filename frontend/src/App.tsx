@@ -21,8 +21,8 @@ export const App: React.FC = () => {
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [timeRange, setTimeRange] = useState<string>('1h');
 
-  const loadData = async () => {
-    setIsLoading(true);
+  const loadData = async (isInitial = false) => {
+    if (isInitial) setIsLoading(true);
     try {
       const results = await Promise.allSettled([
         api.getDashboardSummary(),
@@ -42,13 +42,13 @@ export const App: React.FC = () => {
     } catch (e) {
       console.error('Failed to connect to ARKA backend API cluster:', e);
     } finally {
-      setIsLoading(false);
+      if (isInitial) setIsLoading(false);
     }
   };
 
   useEffect(() => {
-    loadData();
-    const interval = setInterval(loadData, 5000); // Live poll every 5s
+    loadData(true);
+    const interval = setInterval(() => loadData(false), 5000); // Silent background poll every 5s
     return () => clearInterval(interval);
   }, []);
 
