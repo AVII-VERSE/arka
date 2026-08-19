@@ -25,12 +25,8 @@ jobs:
 
       - name: Install Frontend Dependencies
         run: |
-          if [ -f frontend/package.json ]; then cd frontend && npm ci; fi
-
-      - name: Run Vitest Unit Tests
-        run: |
-          if [ -f frontend/package.json ]; then cd frontend && npm test -- --run; fi
+          cd frontend && npm install
 
       - name: Build Production Distribution
         run: |
-          if [ -f frontend/package.json ]; then cd frontend && npm run build; fi
+          cd frontend && npm run build

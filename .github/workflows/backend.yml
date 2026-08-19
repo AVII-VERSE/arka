@@ -4,10 +4,12 @@ on:
   push:
     paths:
       - 'backend/**'
+      - 'agent/**'
       - '.github/workflows/backend.yml'
   pull_request:
     paths:
       - 'backend/**'
+      - 'agent/**'
       - '.github/workflows/backend.yml'
 
 jobs:
@@ -43,11 +45,10 @@ jobs:
         with:
           python-version: '3.12'
 
-      - name: Install dependencies
+      - name: Install Dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install ruff mypy pytest pytest-asyncio httpx coverage
-          if [ -f backend/pyproject.toml ]; then pip install -e "backend/[dev]"; fi
+          pip install -e "./backend[dev]" -e "./agent[dev]"
 
       - name: Run Pytest with Coverage
         env:
@@ -59,4 +60,4 @@ jobs:
           REDIS_HOST: localhost
           REDIS_PORT: 6379
         run: |
-          if [ -d backend/tests ]; then pytest backend/tests --cov=backend/app --cov-report=xml; fi
+          pytest backend/tests agent/tests --cov=backend/app --cov-report=xml

@@ -19,23 +19,22 @@ jobs:
           python-version: '3.12'
           cache: 'pip'
 
-      - name: Install dependencies
+      - name: Install Dependencies
         run: |
           python -m pip install --upgrade pip
-          if [ -f backend/pyproject.toml ]; then pip install -e "backend/[dev]"; fi
+          pip install -e "./backend[dev]" -e "./agent[dev]"
 
-      - name: Run Ruff Lint
+      - name: Run Ruff Lint Check
         run: |
-          pip install ruff mypy pytest
-          if [ -d backend/app ]; then ruff check backend/; fi
+          ruff check backend/ agent/
 
       - name: Run MyPy Type Check
         run: |
-          if [ -d backend/app ]; then mypy backend/app; fi
+          mypy backend/app agent/arka_agent
 
-      - name: Run Backend Unit Tests
+      - name: Run Pytest Test Suite
         run: |
-          if [ -d backend/tests ]; then pytest backend/tests; fi
+          pytest backend/tests agent/tests
 
   frontend-checks:
     name: Frontend Lint & Build
@@ -47,16 +46,14 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: '20'
-          cache: 'npm'
-          cache-dependency-path: frontend/package-lock.json
 
-      - name: Install dependencies
+      - name: Install Frontend Dependencies
         run: |
-          if [ -f frontend/package.json ]; then cd frontend && npm ci; fi
+          cd frontend && npm install
 
-      - name: Type Check & Lint
+      - name: Build Frontend Distribution
         run: |
-          if [ -f frontend/package.json ]; then cd frontend && npm run build; fi
+          cd frontend && npm run build
 
   security-scan:
     name: Security Vulnerability Scan
@@ -72,4 +69,4 @@ jobs:
       - name: Run Bandit Security Analysis
         run: |
           pip install bandit
-          if [ -d backend/app ]; then bandit -r backend/app -ll; fi
+          bandit -r backend/app agent/arka_agent -ll

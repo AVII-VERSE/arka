@@ -21,13 +21,13 @@ jobs:
 
       - name: Install Playwright Dependencies
         run: |
-          if [ -d tests/e2e ]; then cd tests/e2e && npm ci && npx playwright install --with-deps; fi
+          cd tests/e2e && npm install && npx playwright install --with-deps
 
       - name: Launch Services Stack
         run: |
           docker compose up -d postgres kafka opensearch redis
-          sleep 15
+          sleep 10
 
       - name: Run E2E Test Suite
         run: |
-          if [ -d tests/e2e ]; then cd tests/e2e && npx playwright test; fi
+          cd tests/e2e && npx playwright test
