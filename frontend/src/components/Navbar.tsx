@@ -33,8 +33,8 @@ export const Navbar: React.FC<NavbarProps> = ({
           <Shield className="w-5 h-5" />
         </div>
         <div>
-          <div className="font-mono font-bold text-xl tracking-wider text-slate-100 flex items-center gap-2">
-            ARKA <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-cyan-500/20 text-cyan-400 border border-cyan-500/30 font-semibold tracking-normal">ENTERPRISE SIEM v0.1.0</span>
+          <div className="font-mono font-bold text-2xl tracking-wider text-slate-100 flex items-center gap-2">
+            ARKA
           </div>
           <p className="text-[10px] text-slate-400 uppercase tracking-widest font-mono">Advanced Real-time Kinetic Analytics</p>
         </div>

@@ -26,7 +26,7 @@ router = APIRouter()
 @router.get("/summary")
 async def get_dashboard_summary(
     current_user: Annotated[User, Depends(get_current_user)],
-    db: Annotated[AsyncSession, Depends(get_db)],
+    db: Annotated[AsyncSession | None, Depends(get_db)],
 ) -> dict[str, Any]:
     """Generates real-time SOC metrics and statistics for the tenant."""
     tenant_id = current_user.tenant_id
@@ -58,10 +58,32 @@ async def get_dashboard_summary(
         for host, count in sorted(host_counts.items(), key=lambda x: x[1], reverse=True)[:5]
     ]
 
-    # Database aggregations for Alerts
-    alerts_query = select(Alert).where(Alert.tenant_id == tenant_id)
-    alerts_res = await db.execute(alerts_query)
-    alerts = list(alerts_res.scalars().all())
+    alerts: list[Alert] = []
+    open_incidents = 0
+    active_agents = 0
+    offline_agents = 0
+
+    # Safely query database for persistent records
+    if db is not None:
+        try:
+            alerts_query = select(Alert).where(Alert.tenant_id == tenant_id)
+            alerts_res = await db.execute(alerts_query)
+            alerts = list(alerts_res.scalars().all())
+
+            incidents_res = await db.execute(
+                select(Incident).where(
+                    Incident.tenant_id == tenant_id, Incident.status == IncidentStatusEnum.OPEN
+                )
+            )
+            open_incidents = len(list(incidents_res.scalars().all()))
+
+            agents_res = await db.execute(select(Agent).where(Agent.tenant_id == tenant_id))
+            agents = list(agents_res.scalars().all())
+            active_agents = sum(1 for a in agents if a.status == AgentStatusEnum.ONLINE)
+            offline_agents = sum(1 for a in agents if a.status != AgentStatusEnum.ONLINE)
+        except Exception:
+            # Fallback to in-memory agent and alert counts if DB connection is unavailable
+            active_agents = 1 if len(tenant_events) > 0 else 0
 
     critical_alerts = sum(1 for a in alerts if a.severity == SeverityEnum.CRITICAL)
     high_alerts = sum(1 for a in alerts if a.severity == SeverityEnum.HIGH)
@@ -82,21 +104,6 @@ async def get_dashboard_summary(
         {"technique_id": tech, "count": count}
         for tech, count in sorted(mitre_techs.items(), key=lambda x: x[1], reverse=True)
     ]
-
-    # Incidents aggregation
-    incidents_res = await db.execute(
-        select(Incident).where(
-            Incident.tenant_id == tenant_id, Incident.status == IncidentStatusEnum.OPEN
-        )
-    )
-    open_incidents = len(list(incidents_res.scalars().all()))
-
-    # Agents aggregation
-    agents_res = await db.execute(select(Agent).where(Agent.tenant_id == tenant_id))
-    agents = list(agents_res.scalars().all())
-
-    active_agents = sum(1 for a in agents if a.status == AgentStatusEnum.ONLINE)
-    offline_agents = sum(1 for a in agents if a.status != AgentStatusEnum.ONLINE)
 
     recent_alerts = [
         {

@@ -60,13 +60,16 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ summary, isLoading
     { time: '10:30', events: summary.events_per_second },
   ];
 
+  const threatScore = Math.min(100, (summary.critical_alerts * 25) + (summary.high_alerts * 10) + (summary.open_incidents * 15));
+  const threatLevel = threatScore >= 70 ? 'CRITICAL' : threatScore >= 40 ? 'HIGH' : threatScore >= 20 ? 'ELEVATED' : 'LOW';
+  const threatColor = threatLevel === 'CRITICAL' ? 'text-rose-500 border-l-rose-500' : threatLevel === 'HIGH' ? 'text-amber-500 border-l-amber-500' : 'text-emerald-400 border-l-emerald-500';
+
   const mitreTacticsList = [
-    { tactic: 'Initial Access', technique: 'T1190', count: summary.authentication_failures > 0 ? 4 : 0 },
-    { tactic: 'Execution', technique: 'T1059.001', count: 2 },
-    { tactic: 'Persistence', technique: 'T1543.003', count: 1 },
-    { tactic: 'Privilege Escalation', technique: 'T1078', count: 3 },
+    { tactic: 'Initial Access', technique: 'T1190', count: summary.authentication_failures > 0 ? summary.authentication_failures : 0 },
+    { tactic: 'Execution', technique: 'T1059.001', count: summary.mitre_techniques.find(t => t.technique_id === 'T1059.001')?.count || 0 },
+    { tactic: 'Persistence', technique: 'T1543.003', count: summary.mitre_techniques.find(t => t.technique_id === 'T1543.003')?.count || 0 },
+    { tactic: 'Privilege Escalation', technique: 'T1078', count: summary.mitre_techniques.find(t => t.technique_id === 'T1078')?.count || 0 },
     { tactic: 'Credential Access', technique: 'T1110', count: summary.authentication_failures },
-    { tactic: 'Defense Evasion', technique: 'T1027', count: 1 },
   ];
 
   return (
@@ -74,17 +77,17 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ summary, isLoading
       {/* Top Threat Gauge & Key Metric Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
         {/* Threat Index Card */}
-        <div className="glass-card rounded-2xl p-4 flex flex-col justify-between border-l-4 border-l-rose-500 relative overflow-hidden">
+        <div className={`glass-card rounded-2xl p-4 flex flex-col justify-between border-l-4 ${threatColor} relative overflow-hidden`}>
           <div className="flex items-center justify-between">
             <span className="text-[10px] font-mono text-slate-400 uppercase tracking-widest">Threat Risk Gauge</span>
             <Flame className="w-4 h-4 text-rose-500 animate-pulse" />
           </div>
           <div className="my-2">
-            <h3 className="text-3xl font-mono font-extrabold text-rose-500 tracking-tight">84 <span className="text-xs text-slate-400 font-normal">/ 100</span></h3>
-            <p className="text-[10px] font-mono text-rose-400 font-bold uppercase mt-0.5">CRITICAL THREAT INDEX</p>
+            <h3 className={`text-3xl font-mono font-extrabold tracking-tight ${threatColor.split(' ')[0]}`}>{threatScore} <span className="text-xs text-slate-400 font-normal">/ 100</span></h3>
+            <p className={`text-[10px] font-mono font-bold uppercase mt-0.5 ${threatColor.split(' ')[0]}`}>{threatLevel} THREAT INDEX</p>
           </div>
           <div className="w-full bg-slate-950 rounded-full h-1.5 overflow-hidden border border-slate-800">
-            <div className="bg-gradient-to-r from-amber-500 to-rose-500 h-full w-[84%] rounded-full glow-rose" />
+            <div className="bg-gradient-to-r from-cyan-500 via-amber-500 to-rose-500 h-full rounded-full glow-rose" style={{ width: `${threatScore}%` }} />
           </div>
         </div>
 
