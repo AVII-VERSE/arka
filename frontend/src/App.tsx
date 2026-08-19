@@ -24,7 +24,7 @@ export const App: React.FC = () => {
   const loadData = async () => {
     setIsLoading(true);
     try {
-      const [sumRes, evRes, alRes, incRes, agRes, rlRes] = await Promise.all([
+      const results = await Promise.allSettled([
         api.getDashboardSummary(),
         api.getEvents({ limit: 100 }),
         api.getAlerts({ limit: 50 }),
@@ -33,12 +33,12 @@ export const App: React.FC = () => {
         api.getRules(),
       ]);
 
-      setSummary(sumRes);
-      setEvents(evRes);
-      setAlerts(alRes);
-      setIncidents(incRes);
-      setAgents(agRes);
-      setRules(rlRes);
+      if (results[0].status === 'fulfilled') setSummary(results[0].value);
+      if (results[1].status === 'fulfilled') setEvents(results[1].value);
+      if (results[2].status === 'fulfilled') setAlerts(results[2].value);
+      if (results[3].status === 'fulfilled') setIncidents(results[3].value);
+      if (results[4].status === 'fulfilled') setAgents(results[4].value);
+      if (results[5].status === 'fulfilled') setRules(results[5].value);
     } catch (e) {
       console.error('Failed to connect to ARKA backend API cluster:', e);
     } finally {

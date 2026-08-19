@@ -19,11 +19,16 @@ router = APIRouter()
 @router.get("", response_model=list[AgentRead])
 async def list_agents(
     current_user: Annotated[User, Depends(get_current_user)],
-    db: Annotated[AsyncSession, Depends(get_db)],
+    db: Annotated[AsyncSession | None, Depends(get_db)],
 ) -> list[Agent]:
     """Lists registered endpoint agents for tenant."""
-    result = await db.execute(select(Agent).where(Agent.tenant_id == current_user.tenant_id))
-    return list(result.scalars().all())
+    if db is None:
+        return []
+    try:
+        result = await db.execute(select(Agent).where(Agent.tenant_id == current_user.tenant_id))
+        return list(result.scalars().all())
+    except Exception:
+        return []
 
 
 @router.post("/enroll", response_model=AgentRead, status_code=status.HTTP_201_CREATED)

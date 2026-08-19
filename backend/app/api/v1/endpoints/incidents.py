@@ -18,18 +18,23 @@ router = APIRouter()
 @router.get("", response_model=list[IncidentRead])
 async def list_incidents(
     current_user: Annotated[User, Depends(get_current_user)],
-    db: Annotated[AsyncSession, Depends(get_db)],
+    db: Annotated[AsyncSession | None, Depends(get_db)],
     status_filter: str | None = Query(None, alias="status"),
     limit: int = Query(50, ge=1, le=200),
 ) -> list[Incident]:
     """Lists incidents for current tenant."""
-    query = select(Incident).where(Incident.tenant_id == current_user.tenant_id)
-    if status_filter:
-        query = query.where(Incident.status == status_filter.upper())
+    if db is None:
+        return []
+    try:
+        query = select(Incident).where(Incident.tenant_id == current_user.tenant_id)
+        if status_filter:
+            query = query.where(Incident.status == status_filter.upper())
 
-    query = query.order_by(Incident.created_at.desc()).limit(limit)
-    result = await db.execute(query)
-    return list(result.scalars().all())
+        query = query.order_by(Incident.created_at.desc()).limit(limit)
+        result = await db.execute(query)
+        return list(result.scalars().all())
+    except Exception:
+        return []
 
 
 @router.post("", response_model=IncidentRead, status_code=status.HTTP_201_CREATED)

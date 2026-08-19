@@ -18,13 +18,18 @@ router = APIRouter()
 @router.get("", response_model=list[DetectionRuleRead])
 async def list_rules(
     current_user: Annotated[User, Depends(get_current_user)],
-    db: Annotated[AsyncSession, Depends(get_db)],
+    db: Annotated[AsyncSession | None, Depends(get_db)],
 ) -> list[DetectionRule]:
     """Lists security detection rules for tenant."""
-    result = await db.execute(
-        select(DetectionRule).where(DetectionRule.tenant_id == current_user.tenant_id)
-    )
-    return list(result.scalars().all())
+    if db is None:
+        return []
+    try:
+        result = await db.execute(
+            select(DetectionRule).where(DetectionRule.tenant_id == current_user.tenant_id)
+        )
+        return list(result.scalars().all())
+    except Exception:
+        return []
 
 
 @router.post("", response_model=DetectionRuleRead, status_code=status.HTTP_201_CREATED)

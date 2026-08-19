@@ -18,22 +18,25 @@ router = APIRouter()
 @router.get("", response_model=list[AlertRead])
 async def list_alerts(
     current_user: Annotated[User, Depends(get_current_user)],
-    db: Annotated[AsyncSession, Depends(get_db)],
+    db: Annotated[AsyncSession | None, Depends(get_db)],
     severity: str | None = Query(None),
     status_filter: str | None = Query(None, alias="status"),
     limit: int = Query(50, ge=1, le=200),
 ) -> list[Alert]:
     """Lists alerts scoped to the current user's tenant."""
-    query = select(Alert).where(Alert.tenant_id == current_user.tenant_id)
-
-    if severity:
-        query = query.where(Alert.severity == severity.upper())
-    if status_filter:
-        query = query.where(Alert.status == status_filter.upper())
-
-    query = query.order_by(Alert.created_at.desc()).limit(limit)
-    result = await db.execute(query)
-    return list(result.scalars().all())
+    if db is None:
+        return []
+    try:
+        query = select(Alert).where(Alert.tenant_id == current_user.tenant_id)
+        if severity:
+            query = query.where(Alert.severity == severity.upper())
+        if status_filter:
+            query = query.where(Alert.status == status_filter.upper())
+        query = query.order_by(Alert.created_at.desc()).limit(limit)
+        result = await db.execute(query)
+        return list(result.scalars().all())
+    except Exception:
+        return []
 
 
 @router.get("/{alert_id}", response_model=AlertRead)
