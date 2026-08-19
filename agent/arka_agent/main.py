@@ -29,25 +29,32 @@ def main() -> None:
     else:
         collector = LinuxSyslogCollector(agent_id=agent_id, tenant_id=tenant_id)
 
-    # Harvest security events
-    events = collector.collect()
-    print(f"[*] Collected {len(events)} security events from OS telemetry.")
+    import time
+    while True:
+        try:
+            # Harvest security events
+            events = collector.collect()
+            if events:
+                print(f"[*] Collected {len(events)} security events from OS telemetry.")
+                for event in events:
+                    queue.push(event)
 
-    for event in events:
-        queue.push(event)
+            # Flush local queue to Ingestion Gateway
+            pending_batch = queue.pop_batch(batch_size=50)
+            if pending_batch:
+                success = transport.send_events(pending_batch)
+                if success:
+                    queue.delete_batch(batch_size=len(pending_batch))
+                    print(f"[+] Successfully transmitted {len(pending_batch)} events to ARKA Ingestion API.")
+                else:
+                    print(f"[-] Transport failed. {len(pending_batch)} events buffered in SQLite queue.")
 
-    # Flush local queue to Ingestion Gateway
-    pending_batch = queue.pop_batch(batch_size=50)
-    if pending_batch:
-        success = transport.send_events(pending_batch)
-        if success:
-            queue.delete_batch(batch_size=len(pending_batch))
-            print(f"[+] Successfully transmitted {len(pending_batch)} events to ARKA Ingestion API.")
-        else:
-            print(f"[-] Transport failed. {len(pending_batch)} events buffered in SQLite queue.")
+            # Send Agent Heartbeat
+            transport.send_heartbeat(agent_id=agent_id, metrics={"hostname": platform.node()})
+        except Exception as err:
+            print(f"[-] Agent daemon cycle error: {err}")
 
-    # Send Agent Heartbeat
-    transport.send_heartbeat(agent_id=agent_id, metrics={"hostname": platform.node()})
+        time.sleep(5)
 
 
 if __name__ == "__main__":
