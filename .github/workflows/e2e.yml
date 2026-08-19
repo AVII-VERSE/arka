@@ -1,0 +1,33 @@
+name: Playwright E2E Tests
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main, develop ]
+
+jobs:
+  e2e:
+    name: End-to-End Workflow Verification
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Node.js 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install Playwright Dependencies
+        run: |
+          if [ -d tests/e2e ]; then cd tests/e2e && npm ci && npx playwright install --with-deps; fi
+
+      - name: Launch Services Stack
+        run: |
+          docker compose up -d postgres kafka opensearch redis
+          sleep 15
+
+      - name: Run E2E Test Suite
+        run: |
+          if [ -d tests/e2e ]; then cd tests/e2e && npx playwright test; fi

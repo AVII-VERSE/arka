@@ -1,0 +1,37 @@
+name: Security Audit & Scans
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main, develop ]
+  schedule:
+    - cron: '0 4 * * 1'
+
+jobs:
+  security-audit:
+    name: Code & Dependency Security Audit
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Run Bandit (Static Application Security Testing)
+        run: |
+          pip install bandit
+          if [ -d backend/app ]; then bandit -r backend/app -ll; fi
+
+      - name: Run Pip-Audit (Dependency Vulnerability Scanner)
+        run: |
+          pip install pip-audit
+          if [ -f backend/pyproject.toml ]; then pip-audit --directory backend/; fi
+
+      - name: Secret Scanning Check
+        run: |
+          pip install detect-secrets
+          detect-secrets scan --exclude-files '(\.env\.example|package-lock\.json)$'

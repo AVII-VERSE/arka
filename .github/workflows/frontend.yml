@@ -1,0 +1,36 @@
+name: Frontend CI
+
+on:
+  push:
+    paths:
+      - 'frontend/**'
+      - '.github/workflows/frontend.yml'
+  pull_request:
+    paths:
+      - 'frontend/**'
+      - '.github/workflows/frontend.yml'
+
+jobs:
+  test-frontend:
+    name: Vitest & Build Check
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Node.js 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install Frontend Dependencies
+        run: |
+          if [ -f frontend/package.json ]; then cd frontend && npm ci; fi
+
+      - name: Run Vitest Unit Tests
+        run: |
+          if [ -f frontend/package.json ]; then cd frontend && npm test -- --run; fi
+
+      - name: Build Production Distribution
+        run: |
+          if [ -f frontend/package.json ]; then cd frontend && npm run build; fi
