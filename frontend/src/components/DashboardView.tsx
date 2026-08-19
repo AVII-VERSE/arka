@@ -1,11 +1,9 @@
 import React from 'react';
 import {
-  ShieldAlert,
   Activity,
   AlertTriangle,
   FileCheck,
   Server,
-  KeyRound,
 } from 'lucide-react';
 import {
   BarChart,

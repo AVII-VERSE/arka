@@ -1,13 +1,12 @@
 import React from 'react';
-import { ShieldCheck, Code, Tag } from 'lucide-react';
+import { ShieldCheck, Tag } from 'lucide-react';
 import { DetectionRule } from '../types';
 
 interface RulesViewProps {
   rules: DetectionRule[];
-  isLoading: boolean;
 }
 
-export const RulesView: React.FC<RulesViewProps> = ({ rules, isLoading }) => {
+export const RulesView: React.FC<RulesViewProps> = ({ rules }) => {
   return (
     <div className="p-6 space-y-6">
       <div className="flex items-center justify-between">

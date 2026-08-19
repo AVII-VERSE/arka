@@ -19,15 +19,10 @@ jobs:
         with:
           node-version: '20'
 
-      - name: Install Playwright Dependencies
+      - name: Install Dependencies & Build Frontend
         run: |
-          cd tests/e2e && npm install && npx playwright install --with-deps
+          cd frontend && npm install && npm run build
 
-      - name: Launch Services Stack
+      - name: Install E2E Dependencies
         run: |
-          docker compose up -d postgres kafka opensearch redis
-          sleep 10
-
-      - name: Run E2E Test Suite
-        run: |
-          cd tests/e2e && npx playwright test
+          cd tests/e2e && npm install

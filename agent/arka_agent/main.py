@@ -6,6 +6,7 @@ import os
 import platform
 
 from arka_agent.buffer.sqlite_queue import SQLiteQueue
+from arka_agent.collectors.base import BaseCollector
 from arka_agent.collectors.linux_syslog import LinuxSyslogCollector
 from arka_agent.collectors.windows_event_log import WindowsEventLogCollector
 from arka_agent.transport.http_client import AgentHTTPTransport
@@ -22,6 +23,7 @@ def main() -> None:
     queue = SQLiteQueue("agent_buffer.db")
     transport = AgentHTTPTransport(server_url=server_url, agent_token=agent_token)
 
+    collector: BaseCollector
     if platform.system().lower() == "windows":
         collector = WindowsEventLogCollector(agent_id=agent_id, tenant_id=tenant_id)
     else:

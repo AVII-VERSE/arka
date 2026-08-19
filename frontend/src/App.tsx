@@ -68,10 +68,10 @@ export const App: React.FC = () => {
         <main className="flex-1 overflow-y-auto bg-slate-900/50">
           {activeTab === 'dashboard' && <DashboardView summary={summary} isLoading={isLoading} />}
           {activeTab === 'explorer' && <ExplorerView events={events} isLoading={isLoading} onRefresh={loadData} />}
-          {activeTab === 'alerts' && <AlertsView alerts={alerts} isLoading={isLoading} onRefresh={loadData} />}
-          {activeTab === 'incidents' && <IncidentsView incidents={incidents} isLoading={isLoading} onRefresh={loadData} />}
-          {activeTab === 'agents' && <AgentsView agents={agents} isLoading={isLoading} onRefresh={loadData} />}
-          {activeTab === 'rules' && <RulesView rules={rules} isLoading={isLoading} />}
+          {activeTab === 'alerts' && <AlertsView alerts={alerts} onRefresh={loadData} />}
+          {activeTab === 'incidents' && <IncidentsView incidents={incidents} onRefresh={loadData} />}
+          {activeTab === 'agents' && <AgentsView agents={agents} />}
+          {activeTab === 'rules' && <RulesView rules={rules} />}
         </main>
       </div>
     </div>

@@ -1,15 +1,14 @@
 import React, { useState } from 'react';
-import { FileSpreadsheet, Plus, ShieldCheck, UserCheck, MessageSquare } from 'lucide-react';
+import { FileSpreadsheet } from 'lucide-react';
 import { Incident, IncidentStatus } from '../types';
 import { api } from '../api/client';
 
 interface IncidentsViewProps {
   incidents: Incident[];
-  isLoading: boolean;
   onRefresh: () => void;
 }
 
-export const IncidentsView: React.FC<IncidentsViewProps> = ({ incidents, isLoading, onRefresh }) => {
+export const IncidentsView: React.FC<IncidentsViewProps> = ({ incidents, onRefresh }) => {
   const [selectedIncident, setSelectedIncident] = useState<Incident | null>(null);
   const [noteText, setNoteText] = useState('');
 

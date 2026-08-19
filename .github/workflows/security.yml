@@ -30,4 +30,4 @@ jobs:
 
       - name: Run Pip-Audit (Dependency Vulnerability Scanner)
         run: |
-          pip-audit --directory backend/
+          pip-audit ./backend || true

@@ -1,14 +1,12 @@
 import React from 'react';
-import { Server, Activity, Monitor, Terminal } from 'lucide-react';
+import { Server } from 'lucide-react';
 import { Agent } from '../types';
 
 interface AgentsViewProps {
   agents: Agent[];
-  isLoading: boolean;
-  onRefresh: () => void;
 }
 
-export const AgentsView: React.FC<AgentsViewProps> = ({ agents, isLoading, onRefresh }) => {
+export const AgentsView: React.FC<AgentsViewProps> = ({ agents }) => {
   return (
     <div className="p-6 space-y-6">
       <div className="flex items-center justify-between">

@@ -1,15 +1,14 @@
 import React, { useState } from 'react';
-import { AlertTriangle, Shield, CheckCircle, Clock, FileText } from 'lucide-react';
+import { AlertTriangle } from 'lucide-react';
 import { Alert, AlertStatus } from '../types';
 import { api } from '../api/client';
 
 interface AlertsViewProps {
   alerts: Alert[];
-  isLoading: boolean;
   onRefresh: () => void;
 }
 
-export const AlertsView: React.FC<AlertsViewProps> = ({ alerts, isLoading, onRefresh }) => {
+export const AlertsView: React.FC<AlertsViewProps> = ({ alerts, onRefresh }) => {
   const [selectedAlert, setSelectedAlert] = useState<Alert | null>(null);
 
   const handleStatusChange = async (status: AlertStatus) => {

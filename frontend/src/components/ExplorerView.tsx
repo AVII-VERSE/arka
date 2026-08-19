@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Search, Filter, RefreshCw, Terminal, Eye } from 'lucide-react';
+import { Search, RefreshCw, Terminal, Eye } from 'lucide-react';
 import { SecurityEvent } from '../types';
 
 interface ExplorerViewProps {

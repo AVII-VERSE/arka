@@ -89,7 +89,7 @@ export interface DetectionRule {
   name: string;
   description: string;
   severity: Severity;
-  enabled: bool;
+  enabled: boolean;
   mitre_tactic: string;
   mitre_technique_id: string;
   mitre_technique_name: string;
