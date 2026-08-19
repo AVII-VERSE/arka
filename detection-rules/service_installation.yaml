@@ -1,0 +1,19 @@
+id: rule-service-installation
+rule_code: SERVICE_INSTALLATION
+name: New System Service Installed
+description: Detects installation of new system service (Windows Service or Linux systemd unit).
+severity: MEDIUM
+enabled: true
+tenant_id: default
+mitre_attack:
+  tactic: Persistence
+  technique_id: T1543.003
+  technique_name: Create or Modify System Process: Windows Service
+conditions:
+  event_type: service
+  action: service_installed
+threshold:
+  count: 1
+  time_window_seconds: 60
+  group_by:
+    - host

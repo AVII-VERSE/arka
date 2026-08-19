@@ -1,0 +1,24 @@
+id: rule-suspicious-powershell
+rule_code: SUSPICIOUS_POWERSHELL
+name: Suspicious Encoded PowerShell Execution
+description: Detects PowerShell process launches containing encoded command strings or remote script downloads.
+severity: HIGH
+enabled: true
+tenant_id: default
+mitre_attack:
+  tactic: Execution
+  technique_id: T1059.001
+  technique_name: PowerShell
+conditions:
+  event_type: process
+  action: process_created
+  process_contains:
+    - -EncodedCommand
+    - DownloadString
+    - IEX
+threshold:
+  count: 1
+  time_window_seconds: 60
+  group_by:
+    - host
+    - user

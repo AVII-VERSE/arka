@@ -1,0 +1,43 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "arka-agent"
+version = "0.1.0"
+description = "ARKA Resilient Endpoint Security Telemetry Agent Daemon"
+authors = [{ name = "ARKA Core Team", email = "architect@arka-siem.org" }]
+license = "Apache-2.0"
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+    "httpx>=0.27.0",
+    "pydantic>=2.6.0",
+    "psutil>=5.9.8",
+    "pyyaml>=6.0.1",
+    "structlog>=24.1.0"
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.1.0",
+    "pytest-asyncio>=0.23.0",
+    "ruff>=0.3.0",
+    "mypy>=1.9.0"
+]
+
+[project.scripts]
+arka-agent = "arka_agent.main:main"
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["arka_agent*"]
+
+[tool.ruff.lint]
+select = ["E", "F", "B", "I", "N", "UP", "PL"]
+ignore = ["E501", "PLR2004", "PLR0913", "PLR0917", "BLE001", "S110", "UP042"]
+
+[tool.pytest.ini_options]
+minversion = "8.0"
+addopts = "-ra -q"
+testpaths = ["tests"]
