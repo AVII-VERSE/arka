@@ -4,6 +4,7 @@ ARKA Agent CLI Daemon Entrypoint.
 
 import os
 import platform
+import time
 
 from arka_agent.buffer.sqlite_queue import SQLiteQueue
 from arka_agent.collectors.base import BaseCollector
@@ -29,7 +30,6 @@ def main() -> None:
     else:
         collector = LinuxSyslogCollector(agent_id=agent_id, tenant_id=tenant_id)
 
-    import time
     while True:
         try:
             # Harvest security events
