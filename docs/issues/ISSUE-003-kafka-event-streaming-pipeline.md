@@ -1,6 +1,6 @@
 # Issue #3: Implement Real Apache Kafka Event Streaming Pipeline & Dead-Letter Queue (DLQ)
 
-- **Status**: `[IN_PROGRESS]`
+- **Status**: `[RESOLVED]`
 - **Severity**: `HIGH`
 - **Component**: `backend/app/services/kafka_pipeline.py`, `backend/app/api/v1/endpoints/events.py`
 - **Reporter**: Lead Cybersecurity Architect
