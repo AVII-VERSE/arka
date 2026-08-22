@@ -55,6 +55,10 @@ export const api = {
     return res.data;
   },
 
+  getMe: async (): Promise<any> => {
+    const res = await client.get('/auth/me');
+    return res.data;
+  },
   getRules: async (): Promise<DetectionRule[]> => {
     const res = await client.get('/rules');
     return res.data;
