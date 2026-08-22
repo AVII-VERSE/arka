@@ -1,6 +1,6 @@
 # Issue #5: Implement Agent Parent-Child Process Lineage & Configurable File Integrity Monitoring (FIM)
 
-- **Status**: `[IN_PROGRESS]`
+- **Status**: `[RESOLVED]`
 - **Severity**: `HIGH`
 - **Component**: `agent/arka_agent/collectors/fim.py`, `agent/arka_agent/collectors/windows_event_log.py`, `agent/arka_agent/collectors/linux_syslog.py`
 - **Reporter**: Lead Cybersecurity Architect
