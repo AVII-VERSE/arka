@@ -1,6 +1,6 @@
 # Issue #4: Implement OpenSearch Time-Series Indexing & Full-Text Search Engine
 
-- **Status**: `[IN_PROGRESS]`
+- **Status**: `[RESOLVED]`
 - **Severity**: `HIGH`
 - **Component**: `backend/app/services/opensearch_service.py`, `backend/app/api/v1/endpoints/events.py`
 - **Reporter**: Lead Cybersecurity Architect
