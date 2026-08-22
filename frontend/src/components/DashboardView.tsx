@@ -65,11 +65,11 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ summary, isLoading
   const threatColor = threatLevel === 'CRITICAL' ? 'text-rose-500 border-l-rose-500' : threatLevel === 'HIGH' ? 'text-amber-500 border-l-amber-500' : 'text-emerald-400 border-l-emerald-500';
 
   const mitreTacticsList = [
-    { tactic: 'Initial Access', technique: 'T1190', count: summary.authentication_failures > 0 ? summary.authentication_failures : 0 },
-    { tactic: 'Execution', technique: 'T1059.001', count: summary.mitre_techniques.find(t => t.technique_id === 'T1059.001')?.count || 0 },
-    { tactic: 'Persistence', technique: 'T1543.003', count: summary.mitre_techniques.find(t => t.technique_id === 'T1543.003')?.count || 0 },
-    { tactic: 'Privilege Escalation', technique: 'T1078', count: summary.mitre_techniques.find(t => t.technique_id === 'T1078')?.count || 0 },
-    { tactic: 'Credential Access', technique: 'T1110', count: summary.authentication_failures },
+    { tactic: 'Initial Access', technique: 'T1190', count: summary.mitre_techniques.find((t) => t.technique_id === 'T1190')?.count || 0 },
+    { tactic: 'Execution', technique: 'T1059.001', count: summary.mitre_techniques.find((t) => t.technique_id === 'T1059.001')?.count || 0 },
+    { tactic: 'Persistence', technique: 'T1543.003', count: summary.mitre_techniques.find((t) => t.technique_id === 'T1543.003')?.count || 0 },
+    { tactic: 'Privilege Escalation', technique: 'T1078', count: summary.mitre_techniques.find((t) => t.technique_id === 'T1078')?.count || 0 },
+    { tactic: 'Credential Access', technique: 'T1110', count: summary.mitre_techniques.find((t) => t.technique_id === 'T1110')?.count || 0 },
   ];
 
   return (

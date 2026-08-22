@@ -9,7 +9,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.deps import get_current_user, get_db
-from app.api.v1.endpoints.events import _TRANSIENT_EVENT_STORE
+from app.api.v1.endpoints.events import _TRANSIENT_ALERT_STORE, _TRANSIENT_EVENT_STORE
 from app.models.models import (
     Agent,
     AgentStatusEnum,
@@ -82,8 +82,14 @@ async def get_dashboard_summary(
             active_agents = sum(1 for a in agents if a.status == AgentStatusEnum.ONLINE)
             offline_agents = sum(1 for a in agents if a.status != AgentStatusEnum.ONLINE)
         except Exception:
-            # Fallback to in-memory agent and alert counts if DB connection is unavailable
             active_agents = 1 if len(tenant_events) > 0 else 0
+
+    # Include transient alert store if DB alerts list is empty
+    if not alerts and _TRANSIENT_ALERT_STORE:
+        alerts = [a for a in _TRANSIENT_ALERT_STORE if a.tenant_id == tenant_id]
+
+    if active_agents == 0 and len(tenant_events) > 0:
+        active_agents = 1
 
     critical_alerts = sum(1 for a in alerts if a.severity == SeverityEnum.CRITICAL)
     high_alerts = sum(1 for a in alerts if a.severity == SeverityEnum.HIGH)
@@ -95,7 +101,7 @@ async def get_dashboard_summary(
         "LOW": sum(1 for a in alerts if a.severity == SeverityEnum.LOW),
     }
 
-    # MITRE techniques breakdown from alerts
+    # MITRE techniques breakdown from active alerts
     mitre_techs: dict[str, int] = {}
     for a in alerts:
         mitre_techs[a.mitre_technique_id] = mitre_techs.get(a.mitre_technique_id, 0) + 1
