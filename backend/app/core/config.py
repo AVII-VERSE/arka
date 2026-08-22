@@ -61,6 +61,7 @@ class Settings(BaseSettings):
     OPENSEARCH_HOST: str = "localhost"
     OPENSEARCH_PORT: int = 9200
     OPENSEARCH_SCHEME: str = "http"
+    OPENSEARCH_URL: str = "http://localhost:9200"
     OPENSEARCH_USER: str = "admin"
     OPENSEARCH_PASSWORD: str = "admin"
     OPENSEARCH_INDEX_PREFIX: str = "arka-events"
