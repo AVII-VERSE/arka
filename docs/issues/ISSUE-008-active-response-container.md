@@ -1,6 +1,6 @@
 # Issue #8: Implement Automated Active Response & Automated Containment Engine
 
-- **Status**: `[IN_PROGRESS]`
+- **Status**: `[RESOLVED]`
 - **Severity**: `HIGH`
 - **Component**: `agent/arka_agent/active_response.py`, `backend/app/services/active_response_service.py`, `backend/app/api/v1/endpoints/active_response.py`
 - **Reporter**: Lead Cybersecurity Architect
