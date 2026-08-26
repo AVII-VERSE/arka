@@ -14,6 +14,7 @@ from app.api.v1.endpoints import (
     incidents,
     inventory,
     rules,
+    sca,
 )
 
 api_router = APIRouter()
@@ -25,5 +26,6 @@ api_router.include_router(alerts.router, prefix="/alerts", tags=["Alert Manageme
 api_router.include_router(incidents.router, prefix="/incidents", tags=["Incident Management"])
 api_router.include_router(agents.router, prefix="/agents", tags=["Agent Management"])
 api_router.include_router(inventory.router, prefix="/inventory", tags=["System Inventory"])
+api_router.include_router(sca.router, prefix="/sca", tags=["Security Configuration Assessment"])
 api_router.include_router(rules.router, prefix="/rules", tags=["Detection Rules"])
 api_router.include_router(dashboard.router, prefix="/dashboard", tags=["SOC Dashboard"])
