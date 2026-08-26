@@ -5,6 +5,7 @@ V1 API Router Assembly.
 from fastapi import APIRouter
 
 from app.api.v1.endpoints import (
+    active_response,
     agents,
     alerts,
     auth,
@@ -27,5 +28,8 @@ api_router.include_router(incidents.router, prefix="/incidents", tags=["Incident
 api_router.include_router(agents.router, prefix="/agents", tags=["Agent Management"])
 api_router.include_router(inventory.router, prefix="/inventory", tags=["System Inventory"])
 api_router.include_router(sca.router, prefix="/sca", tags=["Security Configuration Assessment"])
+api_router.include_router(
+    active_response.router, prefix="/active_response", tags=["Automated Active Response"]
+)
 api_router.include_router(rules.router, prefix="/rules", tags=["Detection Rules"])
 api_router.include_router(dashboard.router, prefix="/dashboard", tags=["SOC Dashboard"])
