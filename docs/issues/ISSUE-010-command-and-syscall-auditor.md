@@ -1,6 +1,6 @@
 # Issue #10: Implement Command & Syscall Auditor (Auditd & Execve Telemetry Harvester)
 
-- **Status**: `[IN_PROGRESS]`
+- **Status**: `[RESOLVED]`
 - **Severity**: `HIGH`
 - **Component**: `agent/arka_agent/collectors/command_auditor.py`, `backend/app/services/command_audit_service.py`, `backend/app/api/v1/endpoints/command_audit.py`
 - **Reporter**: Lead Cybersecurity Architect
