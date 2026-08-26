@@ -1,6 +1,6 @@
 # Issue #7: Implement Security Configuration Assessment (SCA) & CIS Benchmarks Engine
 
-- **Status**: `[IN_PROGRESS]`
+- **Status**: `[RESOLVED]`
 - **Severity**: `HIGH`
 - **Component**: `agent/arka_agent/collectors/sca.py`, `backend/app/services/sca_engine.py`, `backend/app/api/v1/endpoints/sca.py`
 - **Reporter**: Lead Cybersecurity Architect
