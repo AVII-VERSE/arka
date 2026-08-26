@@ -12,6 +12,7 @@ from app.api.v1.endpoints import (
     events,
     health,
     incidents,
+    inventory,
     rules,
 )
 
@@ -23,5 +24,6 @@ api_router.include_router(events.router, prefix="/events", tags=["Events & Inges
 api_router.include_router(alerts.router, prefix="/alerts", tags=["Alert Management"])
 api_router.include_router(incidents.router, prefix="/incidents", tags=["Incident Management"])
 api_router.include_router(agents.router, prefix="/agents", tags=["Agent Management"])
+api_router.include_router(inventory.router, prefix="/inventory", tags=["System Inventory"])
 api_router.include_router(rules.router, prefix="/rules", tags=["Detection Rules"])
 api_router.include_router(dashboard.router, prefix="/dashboard", tags=["SOC Dashboard"])
