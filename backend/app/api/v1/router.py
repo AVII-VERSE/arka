@@ -16,6 +16,7 @@ from app.api.v1.endpoints import (
     inventory,
     rules,
     sca,
+    vulnerabilities,
 )
 
 api_router = APIRouter()
@@ -30,6 +31,9 @@ api_router.include_router(inventory.router, prefix="/inventory", tags=["System I
 api_router.include_router(sca.router, prefix="/sca", tags=["Security Configuration Assessment"])
 api_router.include_router(
     active_response.router, prefix="/active_response", tags=["Automated Active Response"]
+)
+api_router.include_router(
+    vulnerabilities.router, prefix="/vulnerabilities", tags=["Vulnerability Detection"]
 )
 api_router.include_router(rules.router, prefix="/rules", tags=["Detection Rules"])
 api_router.include_router(dashboard.router, prefix="/dashboard", tags=["SOC Dashboard"])
