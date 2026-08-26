@@ -1,6 +1,6 @@
 # Issue #6: Implement Agent Rootcheck Security Scanner & Syscollector System Inventory Engine
 
-- **Status**: `[IN_PROGRESS]`
+- **Status**: `[RESOLVED]`
 - **Severity**: `HIGH`
 - **Component**: `agent/arka_agent/collectors/rootcheck.py`, `agent/arka_agent/collectors/syscollector.py`, `backend/app/api/v1/endpoints/inventory.py`
 - **Reporter**: Lead Cybersecurity Architect
