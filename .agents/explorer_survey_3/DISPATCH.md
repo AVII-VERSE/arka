@@ -1,5 +1,4 @@
-## 2026-08-26T07:51:13Z
-Mission:
+## 2026-08-26T08:10:21Z
 Perform a comprehensive survey of the testing and quality tooling across the entire ARKA repository:
 1. Inspect `pyproject.toml`, `setup.cfg`, `pytest.ini`, `conftest.py` files in `backend/tests` and `agent/tests`.
 2. Execute/analyze test suites with `pytest` across backend and agent to see current test passes, skips, or failures.

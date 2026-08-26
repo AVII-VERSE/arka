@@ -1,4 +1,4 @@
-﻿# BRIEFING — 2026-08-26T07:50:35Z
+# BRIEFING — 2026-08-26T07:50:35Z
 
 ## Mission
 Coordinate and monitor implementation of Enterprise SIEM, EDR & XDR capabilities (R1-R5) into ARKA codebase.
@@ -21,7 +21,7 @@ Coordinate and monitor implementation of Enterprise SIEM, EDR & XDR capabilities
 - **Delivered results**: none
 
 ## Project Status
-- **Phase**: in progress
+- **Phase**: in progress (Phase 0: Codebase Survey active across 3 explorers)
 - **Cron 1 (Reporting)**: df18a2a6-8ab8-4ac1-8d7f-264dec78e4bf/task-15
 - **Cron 2 (Liveness)**: df18a2a6-8ab8-4ac1-8d7f-264dec78e4bf/task-17
 

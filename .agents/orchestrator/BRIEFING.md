@@ -55,14 +55,16 @@ Implement full enterprise SIEM, EDR, and XDR capabilities into the ARKA codebase
 ## Team Roster
 | Agent | Type | Work Item | Status | Conv ID |
 |-------|------|-----------|--------|---------|
-| explorer_survey_1 | teamwork_preview_explorer | Agent & Collectors Survey (R1-R4) | in-progress | 536366d1-00ee-4e6a-afdd-1407dcefe5dd |
-| explorer_survey_2 | teamwork_preview_explorer | Backend Services & APIs Survey (R2-R5) | in-progress | 06b755d1-087f-49c1-b832-6550d02fa5c8 |
-| explorer_survey_3 | teamwork_preview_explorer | Test & Quality Tooling Survey | in-progress | ef3cecae-afc2-4dec-b0d6-f1cef78c468f |
+| explorer_survey_1 | teamwork_preview_explorer | Agent Survey (R1-R4) | completed | d8a66bd9-b4b0-4246-a61c-8a82f60c2b83 |
+| explorer_survey_2 | teamwork_preview_explorer | Backend Survey (R2-R5) | completed | 60a7356b-50a9-4b6f-8720-013bb5c4ba4c |
+| explorer_survey_3 | teamwork_preview_explorer | Test Survey (Tiers 1-4) | completed | 3dd9d2d2-4bb1-40f5-9bf0-b963757145ce |
+| worker_m1 | teamwork_preview_worker | M1: Core DB Models & Schemas | in-progress | 14214b3a-6130-4a6d-b8a7-23d205fff426 |
+| worker_m2 | teamwork_preview_worker | M2: R1 Rootcheck Harvester | in-progress | 87747fe9-01f0-48ff-aac1-7b50ce1df2ba |
 
 ## Succession Status
 - Succession required: no
-- Spawn count: 3 / 16
-- Pending subagents: 536366d1-00ee-4e6a-afdd-1407dcefe5dd, 06b755d1-087f-49c1-b832-6550d02fa5c8, ef3cecae-afc2-4dec-b0d6-f1cef78c468f
+- Spawn count: 8 / 16
+- Pending subagents: 14214b3a-6130-4a6d-b8a7-23d205fff426, 87747fe9-01f0-48ff-aac1-7b50ce1df2ba
 - Predecessor: none
 - Successor: not yet spawned
 

@@ -9,6 +9,7 @@ from app.api.v1.endpoints import (
     agents,
     alerts,
     auth,
+    command_audit,
     dashboard,
     events,
     health,
@@ -34,6 +35,9 @@ api_router.include_router(
 )
 api_router.include_router(
     vulnerabilities.router, prefix="/vulnerabilities", tags=["Vulnerability Detection"]
+)
+api_router.include_router(
+    command_audit.router, prefix="/command_audit", tags=["Command & Syscall Audit"]
 )
 api_router.include_router(rules.router, prefix="/rules", tags=["Detection Rules"])
 api_router.include_router(dashboard.router, prefix="/dashboard", tags=["SOC Dashboard"])
