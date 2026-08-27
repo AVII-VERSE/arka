@@ -36,7 +36,7 @@ class SCAEngine:
         if report_data.get("passed_checks") is not None and report_data.get("failed_checks") is not None:
             passed_checks = int(report_data["passed_checks"])
             failed_checks = int(report_data["failed_checks"])
-            not_applicable_checks = int(report_data.get("not_applicable_checks", 0))
+            not_applicable_checks = int(report_data.get("not_applicable_checks") or 0)
         elif checks:
             passed_checks = sum(
                 1 for c in checks if c.get("status") in ("PASS", "PASSED") or c.get("result") in ("PASS", "PASSED")
@@ -48,9 +48,9 @@ class SCAEngine:
                 1 for c in checks if c.get("status") == "NOT_APPLICABLE" or c.get("result") == "NOT_APPLICABLE"
             )
         else:
-            passed_checks = int(summary.get("passed", 0))
-            failed_checks = int(summary.get("failed", 0))
-            not_applicable_checks = int(summary.get("not_applicable", 0))
+            passed_checks = int(summary.get("passed") or 0)
+            failed_checks = int(summary.get("failed") or 0)
+            not_applicable_checks = int(summary.get("not_applicable") or 0)
 
         # Calculate or extract compliance score
         if report_data.get("compliance_score") is not None:

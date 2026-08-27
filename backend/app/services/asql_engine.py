@@ -90,7 +90,7 @@ class ASQLEngine:
             filtered = res
 
         # Apply grouping if requested
-        groups = {}
+        groups: dict[str, int] = {}
         if ast["group_by"]:
             grp_field = ast["group_by"]
             for item in filtered:

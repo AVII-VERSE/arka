@@ -1,0 +1,22 @@
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+
+[tool.ruff.lint]
+select = ["E", "F", "B", "I", "N", "UP", "PL"]
+ignore = ["E501", "PLR2004", "PLR0913", "PLR0917", "BLE001", "S110", "UP042"]
+
+[tool.mypy]
+python_version = "3.12"
+ignore_missing_imports = true
+warn_unused_ignores = false
+
+[[tool.mypy.overrides]]
+module = ["yaml.*", "jose.*", "passlib.*", "structlog.*", "psutil.*"]
+ignore_missing_imports = true
+
+[tool.pytest.ini_options]
+minversion = "8.0"
+addopts = "-ra -q --strict-markers"
+testpaths = ["backend/tests", "agent/tests"]
+asyncio_mode = "auto"
