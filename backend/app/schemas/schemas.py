@@ -516,4 +516,4 @@ class VulnerabilityStatusUpdate(BaseModel):
 class VulnerabilityScanPayload(BaseModel):
     agent_id: str
     tenant_id: str | None = None
-    packages: list[dict[str, str]]
+    packages: list[dict[str, Any]] = Field(default_factory=list)

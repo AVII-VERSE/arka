@@ -92,6 +92,7 @@ class ActiveResponseActionEnum(str, enum.Enum):
 
 class VulnerabilityStatusEnum(str, enum.Enum):
     ACTIVE = "ACTIVE"
+    MITIGATED = "MITIGATED"
     RESOLVED = "RESOLVED"
     FALSE_POSITIVE = "FALSE_POSITIVE"
     SUPPRESSED = "SUPPRESSED"

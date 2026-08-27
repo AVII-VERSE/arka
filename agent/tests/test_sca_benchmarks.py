@@ -78,23 +78,38 @@ class TestSCAScannerEvaluators:
         test_file = tmp_path / "passwd"
         test_file.write_text("root:x:0:0:root:/root:/bin/bash\n")
 
-        # Set mode 0644
-        os.chmod(str(test_file), 0o644)
-        status, _ = scanner.eval_file_permissions(str(test_file), max_mode=0o644)
-        assert status == "PASS"
+        # Mock stat for POSIX mode testing
+        mock_stat_644 = MagicMock()
+        mock_stat_644.st_mode = stat.S_IFREG | 0o644
+        mock_stat_644.st_uid = 0
+        mock_stat_644.st_gid = 0
+
+        with patch("os.stat", return_value=mock_stat_644), patch("os.path.exists", return_value=True), patch("sys.platform", "linux"):
+            status, _ = scanner.eval_file_permissions(str(test_file), max_mode=0o644)
+            assert status == "PASS"
 
         # Mode 0600 is more restrictive than 0644 -> should PASS
-        os.chmod(str(test_file), 0o600)
-        status_rest, _ = scanner.eval_file_permissions(str(test_file), max_mode=0o644)
-        assert status_rest == "PASS"
+        mock_stat_600 = MagicMock()
+        mock_stat_600.st_mode = stat.S_IFREG | 0o600
+        mock_stat_600.st_uid = 0
+        mock_stat_600.st_gid = 0
+
+        with patch("os.stat", return_value=mock_stat_600), patch("os.path.exists", return_value=True), patch("sys.platform", "linux"):
+            status_rest, _ = scanner.eval_file_permissions(str(test_file), max_mode=0o644)
+            assert status_rest == "PASS"
 
         # Mode 0777 is less restrictive than 0644 -> should FAIL
-        os.chmod(str(test_file), 0o777)
-        status_insecure, rationale_insecure = scanner.eval_file_permissions(
-            str(test_file), max_mode=0o644
-        )
-        assert status_insecure == "FAIL"
-        assert "less restrictive" in rationale_insecure
+        mock_stat_777 = MagicMock()
+        mock_stat_777.st_mode = stat.S_IFREG | 0o777
+        mock_stat_777.st_uid = 0
+        mock_stat_777.st_gid = 0
+
+        with patch("os.stat", return_value=mock_stat_777), patch("os.path.exists", return_value=True), patch("sys.platform", "linux"):
+            status_insecure, rationale_insecure = scanner.eval_file_permissions(
+                str(test_file), max_mode=0o644
+            )
+            assert status_insecure == "FAIL"
+            assert "less restrictive" in rationale_insecure
 
     def test_eval_file_permissions_suid_sgid(self, tmp_path):
         """Verifies detection of SUID and SGID bits."""

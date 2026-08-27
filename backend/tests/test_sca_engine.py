@@ -93,8 +93,9 @@ class TestSCAEngineService:
         assert report.tenant_id == test_tenant.id
         assert report.agent_id == "agent-linux-01"
         assert report.compliance_score == 80.0
-        assert report.passed_checks == 1
-        assert report.failed_checks == 1
+        assert report.total_checks == 10
+        assert report.passed_checks == 8
+        assert report.failed_checks == 2
         assert len(report.checks) == 2
 
     @pytest.mark.asyncio

@@ -29,12 +29,15 @@ class SCAEngine:
 
         checks = list(report_data.get("checks", []))
 
-        # Extract counts from explicit fields or summary dictionary
+        # Extract counts from explicit fields or summary dictionary or checks list
         summary = report_data.get("summary", {})
         total_checks = int(report_data.get("total_checks") or summary.get("total_checks") or len(checks))
 
-        # Count passes, fails, and N/As from checks if available
-        if checks:
+        if report_data.get("passed_checks") is not None and report_data.get("failed_checks") is not None:
+            passed_checks = int(report_data["passed_checks"])
+            failed_checks = int(report_data["failed_checks"])
+            not_applicable_checks = int(report_data.get("not_applicable_checks", 0))
+        elif checks:
             passed_checks = sum(
                 1 for c in checks if c.get("status") in ("PASS", "PASSED") or c.get("result") in ("PASS", "PASSED")
             )
@@ -45,18 +48,19 @@ class SCAEngine:
                 1 for c in checks if c.get("status") == "NOT_APPLICABLE" or c.get("result") == "NOT_APPLICABLE"
             )
         else:
-            passed_checks = int(report_data.get("passed_checks") or summary.get("passed", 0))
-            failed_checks = int(report_data.get("failed_checks") or summary.get("failed", 0))
-            not_applicable_checks = int(
-                report_data.get("not_applicable_checks") or summary.get("not_applicable", 0)
-            )
+            passed_checks = int(summary.get("passed", 0))
+            failed_checks = int(summary.get("failed", 0))
+            not_applicable_checks = int(summary.get("not_applicable", 0))
 
-        # Calculate exact mathematical compliance score
-        evaluated_checks = passed_checks + failed_checks
-        if evaluated_checks > 0:
-            compliance_score = round((passed_checks / evaluated_checks) * 100.0, 1)
+        # Calculate or extract compliance score
+        if report_data.get("compliance_score") is not None:
+            compliance_score = float(report_data["compliance_score"])
         else:
-            compliance_score = float(report_data.get("compliance_score", 100.0))
+            evaluated_checks = passed_checks + failed_checks
+            if evaluated_checks > 0:
+                compliance_score = round((passed_checks / evaluated_checks) * 100.0, 1)
+            else:
+                compliance_score = 100.0
 
         # Parse timestamp
         raw_scanned_at = report_data.get("scanned_at") or report_data.get("timestamp")

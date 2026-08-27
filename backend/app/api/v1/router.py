@@ -20,6 +20,7 @@ from app.api.v1.endpoints import (
     rules,
     sca,
     vulnerabilities,
+    webhooks,
 )
 
 api_router = APIRouter()
@@ -45,5 +46,6 @@ api_router.include_router(
     cloud_container.router, prefix="/cloud_container", tags=["Container & Cloud Security"]
 )
 api_router.include_router(query.router, prefix="/query", tags=["ARKA Security Query Language"])
+api_router.include_router(webhooks.router, prefix="/webhooks", tags=["Webhook Alerting"])
 api_router.include_router(rules.router, prefix="/rules", tags=["Detection Rules"])
 api_router.include_router(dashboard.router, prefix="/dashboard", tags=["SOC Dashboard"])
