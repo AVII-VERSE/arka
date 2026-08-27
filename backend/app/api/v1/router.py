@@ -9,6 +9,7 @@ from app.api.v1.endpoints import (
     agents,
     alerts,
     auth,
+    cloud_container,
     command_audit,
     dashboard,
     events,
@@ -38,6 +39,9 @@ api_router.include_router(
 )
 api_router.include_router(
     command_audit.router, prefix="/command_audit", tags=["Command & Syscall Audit"]
+)
+api_router.include_router(
+    cloud_container.router, prefix="/cloud_container", tags=["Container & Cloud Security"]
 )
 api_router.include_router(rules.router, prefix="/rules", tags=["Detection Rules"])
 api_router.include_router(dashboard.router, prefix="/dashboard", tags=["SOC Dashboard"])

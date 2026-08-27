@@ -11,7 +11,9 @@ from sqlalchemy import (
     JSON,
     Boolean,
     DateTime,
+    Float,
     ForeignKey,
+    Integer,
     String,
     Text,
 )
@@ -66,6 +68,33 @@ class AgentStatusEnum(str, enum.Enum):
     OFFLINE = "OFFLINE"
     DISCONNECTED = "DISCONNECTED"
     UNENROLLED = "UNENROLLED"
+
+
+class ActiveResponseTaskStatusEnum(str, enum.Enum):
+    PENDING = "PENDING"
+    DISPATCHED = "DISPATCHED"
+    EXECUTING = "EXECUTING"
+    SUCCESS = "SUCCESS"
+    FAILED = "FAILED"
+    TIMEOUT = "TIMEOUT"
+    CANCELLED = "CANCELLED"
+
+
+class ActiveResponseActionEnum(str, enum.Enum):
+    BLOCK_IP = "block_ip"
+    UNBLOCK_IP = "unblock_ip"
+    KILL_PROCESS = "kill_process"
+    LOCK_USER = "lock_user"
+    ISOLATE_HOST = "isolate_host"
+    RECONNECT_HOST = "reconnect_host"
+    QUARANTINE_FILE = "quarantine_file"
+
+
+class VulnerabilityStatusEnum(str, enum.Enum):
+    ACTIVE = "ACTIVE"
+    RESOLVED = "RESOLVED"
+    FALSE_POSITIVE = "FALSE_POSITIVE"
+    SUPPRESSED = "SUPPRESSED"
 
 
 class Tenant(Base):
@@ -180,3 +209,210 @@ class AuditLog(Base):
     details: Mapped[dict[str, Any]] = mapped_column(JSON, default=dict)
     ip_address: Mapped[str | None] = mapped_column(String(45), nullable=True)
     timestamp: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utc_now, index=True)
+
+
+# --- R2: Security Configuration Assessment (SCA) Models ---
+
+
+class SCAPolicy(Base):
+    __tablename__ = "sca_policies"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=generate_uuid)
+    tenant_id: Mapped[str] = mapped_column(String(36), ForeignKey("tenants.id"), nullable=False, index=True)
+    policy_code: Mapped[str] = mapped_column(String(100), nullable=False, index=True)
+    name: Mapped[str] = mapped_column(String(255), nullable=False)
+    description: Mapped[str] = mapped_column(Text, nullable=False)
+    os_type: Mapped[str] = mapped_column(String(50), nullable=False)  # "linux", "windows", "all"
+    enabled: Mapped[bool] = mapped_column(Boolean, default=True)
+    rules_count: Mapped[int] = mapped_column(Integer, default=0)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utc_now)
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utc_now, onupdate=utc_now)
+
+
+class SCAScanReport(Base):
+    __tablename__ = "sca_scan_reports"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=generate_uuid)
+    tenant_id: Mapped[str] = mapped_column(String(36), ForeignKey("tenants.id"), nullable=False, index=True)
+    agent_id: Mapped[str] = mapped_column(String(36), ForeignKey("agents.id"), nullable=False, index=True)
+    policy_id: Mapped[str] = mapped_column(String(100), nullable=False, index=True)
+    policy_name: Mapped[str] = mapped_column(String(255), nullable=False)
+    compliance_score: Mapped[float] = mapped_column(Float, nullable=False)
+    total_checks: Mapped[int] = mapped_column(Integer, nullable=False)
+    passed_checks: Mapped[int] = mapped_column(Integer, nullable=False)
+    failed_checks: Mapped[int] = mapped_column(Integer, nullable=False)
+    not_applicable_checks: Mapped[int] = mapped_column(Integer, nullable=False)
+    checks: Mapped[list[dict[str, Any]]] = mapped_column(JSON, default=list)
+    scanned_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utc_now, index=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utc_now)
+
+
+# --- R3: Syscollector System Inventory Models ---
+
+
+class AgentInventoryHardware(Base):
+    __tablename__ = "agent_inventory_hardware"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=generate_uuid)
+    tenant_id: Mapped[str] = mapped_column(String(36), ForeignKey("tenants.id"), nullable=False, index=True)
+    agent_id: Mapped[str] = mapped_column(String(36), ForeignKey("agents.id"), nullable=False, unique=True, index=True)
+    cpu_cores_logical: Mapped[int] = mapped_column(Integer, default=1)
+    cpu_cores_physical: Mapped[int] = mapped_column(Integer, default=1)
+    cpu_architecture: Mapped[str] = mapped_column(String(50), nullable=False)
+    ram_total_gb: Mapped[float] = mapped_column(Float, nullable=False)
+    disks: Mapped[list[dict[str, Any]]] = mapped_column(JSON, default=list)
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utc_now, onupdate=utc_now)
+
+
+class AgentInventoryOS(Base):
+    __tablename__ = "agent_inventory_os"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=generate_uuid)
+    tenant_id: Mapped[str] = mapped_column(String(36), ForeignKey("tenants.id"), nullable=False, index=True)
+    agent_id: Mapped[str] = mapped_column(String(36), ForeignKey("agents.id"), nullable=False, unique=True, index=True)
+    os_name: Mapped[str] = mapped_column(String(100), nullable=False)
+    os_release: Mapped[str] = mapped_column(String(100), nullable=False)
+    os_version: Mapped[str] = mapped_column(String(100), nullable=False)
+    kernel_architecture: Mapped[str] = mapped_column(String(50), nullable=False)
+    hostname: Mapped[str] = mapped_column(String(255), nullable=False)
+    python_version: Mapped[str] = mapped_column(String(50), nullable=False)
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utc_now, onupdate=utc_now)
+
+
+class AgentInventoryPackage(Base):
+    __tablename__ = "agent_inventory_packages"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=generate_uuid)
+    tenant_id: Mapped[str] = mapped_column(String(36), ForeignKey("tenants.id"), nullable=False, index=True)
+    agent_id: Mapped[str] = mapped_column(String(36), ForeignKey("agents.id"), nullable=False, index=True)
+    name: Mapped[str] = mapped_column(String(255), nullable=False, index=True)
+    version: Mapped[str] = mapped_column(String(100), nullable=False)
+    format: Mapped[str | None] = mapped_column(String(50), nullable=True)  # deb, rpm, win, pip
+    architecture: Mapped[str | None] = mapped_column(String(50), nullable=True)
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utc_now, onupdate=utc_now)
+
+
+class AgentInventoryNetwork(Base):
+    __tablename__ = "agent_inventory_network"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=generate_uuid)
+    tenant_id: Mapped[str] = mapped_column(String(36), ForeignKey("tenants.id"), nullable=False, index=True)
+    agent_id: Mapped[str] = mapped_column(String(36), ForeignKey("agents.id"), nullable=False, index=True)
+    interface_name: Mapped[str] = mapped_column(String(100), nullable=False)
+    ipv4_address: Mapped[str | None] = mapped_column(String(45), nullable=True)
+    ipv6_address: Mapped[str | None] = mapped_column(String(100), nullable=True)
+    mac_address: Mapped[str | None] = mapped_column(String(50), nullable=True)
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utc_now, onupdate=utc_now)
+
+
+class AgentInventoryPort(Base):
+    __tablename__ = "agent_inventory_ports"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=generate_uuid)
+    tenant_id: Mapped[str] = mapped_column(String(36), ForeignKey("tenants.id"), nullable=False, index=True)
+    agent_id: Mapped[str] = mapped_column(String(36), ForeignKey("agents.id"), nullable=False, index=True)
+    protocol: Mapped[str] = mapped_column(String(10), nullable=False)  # tcp, udp
+    local_ip: Mapped[str] = mapped_column(String(45), nullable=False)
+    local_port: Mapped[int] = mapped_column(Integer, nullable=False)
+    pid: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    process_name: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    state: Mapped[str | None] = mapped_column(String(50), nullable=True)
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utc_now, onupdate=utc_now)
+
+
+class AgentInventoryProcess(Base):
+    __tablename__ = "agent_inventory_processes"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=generate_uuid)
+    tenant_id: Mapped[str] = mapped_column(String(36), ForeignKey("tenants.id"), nullable=False, index=True)
+    agent_id: Mapped[str] = mapped_column(String(36), ForeignKey("agents.id"), nullable=False, index=True)
+    pid: Mapped[int] = mapped_column(Integer, nullable=False)
+    name: Mapped[str] = mapped_column(String(255), nullable=False)
+    username: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    cpu_percent: Mapped[float] = mapped_column(Float, default=0.0)
+    memory_percent: Mapped[float] = mapped_column(Float, default=0.0)
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utc_now, onupdate=utc_now)
+
+
+# --- R4: Automated Active Response Models ---
+
+
+class ActiveResponseTask(Base):
+    __tablename__ = "active_response_tasks"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=generate_uuid)
+    tenant_id: Mapped[str] = mapped_column(String(36), ForeignKey("tenants.id"), nullable=False, index=True)
+    agent_id: Mapped[str] = mapped_column(String(36), ForeignKey("agents.id"), nullable=False, index=True)
+    action: Mapped[ActiveResponseActionEnum] = mapped_column(SQLEnum(ActiveResponseActionEnum), nullable=False)
+    target: Mapped[str] = mapped_column(String(255), nullable=False)
+    parameters: Mapped[dict[str, Any]] = mapped_column(JSON, default=dict)
+    status: Mapped[ActiveResponseTaskStatusEnum] = mapped_column(
+        SQLEnum(ActiveResponseTaskStatusEnum), default=ActiveResponseTaskStatusEnum.PENDING, index=True
+    )
+    trigger_alert_id: Mapped[str | None] = mapped_column(String(36), ForeignKey("alerts.id"), nullable=True)
+    triggered_by_user_id: Mapped[str | None] = mapped_column(String(36), ForeignKey("users.id"), nullable=True)
+    command_payload: Mapped[dict[str, Any]] = mapped_column(JSON, default=dict)
+    exit_code: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    stdout: Mapped[str | None] = mapped_column(Text, nullable=True)
+    stderr: Mapped[str | None] = mapped_column(Text, nullable=True)
+    message: Mapped[str | None] = mapped_column(Text, nullable=True)
+    dispatched_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    executed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utc_now, index=True)
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utc_now, onupdate=utc_now)
+
+
+# --- R5: Vulnerability Detection & CVE Correlation Models ---
+
+
+class CVEItem(Base):
+    __tablename__ = "cve_items"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=generate_uuid)
+    cve_id: Mapped[str] = mapped_column(String(50), unique=True, nullable=False, index=True)
+    package_name: Mapped[str] = mapped_column(String(100), nullable=False, index=True)
+    affected_versions_spec: Mapped[str] = mapped_column(String(255), nullable=False)  # e.g. "<2.17.1", "==1.1.1t"
+    fixed_version: Mapped[str | None] = mapped_column(String(100), nullable=True)
+    severity: Mapped[SeverityEnum] = mapped_column(SQLEnum(SeverityEnum), nullable=False, index=True)
+    cvss_score: Mapped[float] = mapped_column(Float, nullable=False)
+    cvss_vector: Mapped[str | None] = mapped_column(String(100), nullable=True)
+    summary: Mapped[str] = mapped_column(Text, nullable=False)
+    references: Mapped[list[str]] = mapped_column(JSON, default=list)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utc_now)
+
+
+class VulnerabilityFinding(Base):
+    __tablename__ = "vulnerability_findings"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=generate_uuid)
+    tenant_id: Mapped[str] = mapped_column(String(36), ForeignKey("tenants.id"), nullable=False, index=True)
+    agent_id: Mapped[str] = mapped_column(String(36), ForeignKey("agents.id"), nullable=False, index=True)
+    cve_id: Mapped[str] = mapped_column(String(50), nullable=False, index=True)
+    package_name: Mapped[str] = mapped_column(String(100), nullable=False, index=True)
+    installed_version: Mapped[str] = mapped_column(String(100), nullable=False)
+    fixed_version: Mapped[str | None] = mapped_column(String(100), nullable=True)
+    severity: Mapped[SeverityEnum] = mapped_column(SQLEnum(SeverityEnum), nullable=False, index=True)
+    cvss_score: Mapped[float] = mapped_column(Float, nullable=False)
+    summary: Mapped[str] = mapped_column(Text, nullable=False)
+    status: Mapped[VulnerabilityStatusEnum] = mapped_column(
+        SQLEnum(VulnerabilityStatusEnum), default=VulnerabilityStatusEnum.ACTIVE, index=True
+    )
+    detected_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utc_now, index=True)
+    resolved_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utc_now, onupdate=utc_now)
+
+
+class VulnerabilityScanReport(Base):
+    __tablename__ = "vulnerability_scan_reports"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=generate_uuid)
+    tenant_id: Mapped[str] = mapped_column(String(36), ForeignKey("tenants.id"), nullable=False, index=True)
+    agent_id: Mapped[str] = mapped_column(String(36), ForeignKey("agents.id"), nullable=False, index=True)
+    scanned_packages_count: Mapped[int] = mapped_column(Integer, nullable=False)
+    vulnerability_count: Mapped[int] = mapped_column(Integer, nullable=False)
+    critical_count: Mapped[int] = mapped_column(Integer, default=0)
+    high_count: Mapped[int] = mapped_column(Integer, default=0)
+    medium_count: Mapped[int] = mapped_column(Integer, default=0)
+    low_count: Mapped[int] = mapped_column(Integer, default=0)
+    scanned_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utc_now)
+

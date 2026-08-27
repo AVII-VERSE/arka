@@ -58,13 +58,18 @@ Implement full enterprise SIEM, EDR, and XDR capabilities into the ARKA codebase
 | explorer_survey_1 | teamwork_preview_explorer | Agent Survey (R1-R4) | completed | d8a66bd9-b4b0-4246-a61c-8a82f60c2b83 |
 | explorer_survey_2 | teamwork_preview_explorer | Backend Survey (R2-R5) | completed | 60a7356b-50a9-4b6f-8720-013bb5c4ba4c |
 | explorer_survey_3 | teamwork_preview_explorer | Test Survey (Tiers 1-4) | completed | 3dd9d2d2-4bb1-40f5-9bf0-b963757145ce |
-| worker_m1 | teamwork_preview_worker | M1: Core DB Models & Schemas | in-progress | 14214b3a-6130-4a6d-b8a7-23d205fff426 |
-| worker_m2 | teamwork_preview_worker | M2: R1 Rootcheck Harvester | in-progress | 87747fe9-01f0-48ff-aac1-7b50ce1df2ba |
+| worker_m1 | teamwork_preview_worker | M1: Core DB Models & Schemas | completed | f7258418-7857-47b3-b55f-f447f7e90aef |
+| worker_m2 | teamwork_preview_worker | M2: R1 Rootcheck Harvester | completed | b8040fe4-14d4-4739-ac53-d92e3d24417b |
+| reviewer_m1_m2 | teamwork_preview_reviewer | Review M1 & M2 | completed | 33e8f61d-43c2-41b8-842a-886dacc1f3a0 |
+| challenger_m1_m2 | teamwork_preview_challenger | Challenge M1 & M2 | completed | e8916d53-21d9-4431-b1d8-ee6245fbb17e |
+| auditor_m1_m2 | teamwork_preview_auditor | Forensic Audit M1 & M2 | completed | db0038fc-d87b-4f57-981e-00fe62b33c99 |
+| worker_m3 | teamwork_preview_worker | M3: R2 SCA & CIS Engine | in-progress | 18b22506-7daf-489b-8dee-43fe8b373e28 |
+| worker_m4 | teamwork_preview_worker | M4: R3 Syscollector & Inventory APIs | in-progress | f3814b37-ee3d-46a4-82ed-8e23905cb51a |
 
 ## Succession Status
-- Succession required: no
-- Spawn count: 8 / 16
-- Pending subagents: 14214b3a-6130-4a6d-b8a7-23d205fff426, 87747fe9-01f0-48ff-aac1-7b50ce1df2ba
+- Succession required: yes (threshold reached, will execute upon subagent completion)
+- Spawn count: 19 / 16
+- Pending subagents: 18b22506-7daf-489b-8dee-43fe8b373e28, f3814b37-ee3d-46a4-82ed-8e23905cb51a
 - Predecessor: none
 - Successor: not yet spawned
 

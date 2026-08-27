@@ -33,10 +33,10 @@
 ## Milestones
 | # | Name | Scope | Dependencies | Status |
 |---|------|-------|-------------|--------|
-| M1 | Core DB Models & Schemas | Add 12 SQLAlchemy models and Pydantic schemas for R2-R5 in `models.py` and `schemas.py` | None | PLANNED |
-| M2 | R1: Rootcheck & Anomaly Harvester | Implement `agent/arka_agent/collectors/rootcheck.py` with comprehensive anomaly detection | None | PLANNED |
-| M3 | R2: SCA & CIS Benchmarks Engine | Implement `agent/arka_agent/collectors/sca.py`, `backend/app/services/sca_engine.py`, `backend/app/api/v1/endpoints/sca.py` | M1 | PLANNED |
-| M4 | R3: Syscollector & Inventory APIs | Implement `agent/arka_agent/collectors/syscollector.py`, `backend/app/services/inventory_service.py`, `backend/app/api/v1/endpoints/inventory.py` | M1 | PLANNED |
+| M1 | Core DB Models & Schemas | Add 12 SQLAlchemy models and Pydantic schemas for R2-R5 in `models.py` and `schemas.py` | None | DONE |
+| M2 | R1: Rootcheck & Anomaly Harvester | Implement `agent/arka_agent/collectors/rootcheck.py` with comprehensive anomaly detection | None | DONE |
+| M3 | R2: SCA & CIS Benchmarks Engine | Implement `agent/arka_agent/collectors/sca.py`, `backend/app/services/sca_engine.py`, `backend/app/api/v1/endpoints/sca.py` | M1 | IN_PROGRESS |
+| M4 | R3: Syscollector & Inventory APIs | Implement `agent/arka_agent/collectors/syscollector.py`, `backend/app/services/inventory_service.py`, `backend/app/api/v1/endpoints/inventory.py` | M1 | IN_PROGRESS |
 | M5 | R4: Active Response Container & Service | Implement `agent/arka_agent/active_response.py`, `backend/app/services/active_response_service.py`, `backend/app/api/v1/endpoints/active_response.py` | M1 | PLANNED |
 | M6 | R5: Vulnerability & CVE Engine | Implement `backend/app/services/vulnerability_engine.py`, `backend/app/api/v1/endpoints/vulnerabilities.py`, package correlation | M1, M4 | PLANNED |
 | M7 | Final E2E Suite & Hardening | Pass 100% of E2E tests (Tiers 1-4), Tier 5 adversarial hardening, zero fake data audit, ruff, mypy, bandit | M1-M6 | PLANNED |

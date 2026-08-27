@@ -1,4 +1,4 @@
-## 2026-08-26T08:29:52Z
+## 2026-08-26T09:11:37Z
 You are teamwork_preview_worker #1 for Milestone M1 (Core DB Models & Schemas).
 
 Your Working Directory: d:/ARKA/.agents/worker_m1
@@ -14,18 +14,20 @@ Scope & Exclusively Owned Files:
 - `backend/app/schemas/schemas.py`
 - `backend/tests/test_persistence.py`
 
-Tasks:
-1. Initialize `progress.md` and `BRIEFING.md` in `d:/ARKA/.agents/worker_m1`.
-2. Implement 12 SQLAlchemy 2.x Declarative Models in `backend/app/models/models.py` (with proper types, Mapped annotations, ForeignKeys, default UUIDs, UTC timestamps, JSON columns, and Enums) per `d:/ARKA/.agents/explorer_survey_2/handoff.md § 2.1`:
-   - `SCAPolicy`, `SCAScanReport`
-   - `AgentInventoryHardware`, `AgentInventoryOS`, `AgentInventoryPackage`, `AgentInventoryNetwork`, `AgentInventoryPort`, `AgentInventoryProcess`
-   - `ActiveResponseTask`, `ActiveResponseTaskStatusEnum`, `ActiveResponseActionEnum`
-   - `CVEItem`, `VulnerabilityFinding`, `VulnerabilityScanReport`, `VulnerabilityStatusEnum`
-3. Implement Pydantic v2 schemas in `backend/app/schemas/schemas.py` for all entities (Base, Create, Read, Update, Summary) with full typing.
-4. Add comprehensive persistence tests in `backend/tests/test_persistence.py` testing database transactions, CRUD, relationship integrity, and tenant isolation for all new models.
-5. Run test verification and quality checks:
-   - `pytest backend/tests`
+Current Status:
+`backend/app/models/models.py` has already been updated with the 12 new SQLAlchemy 2.x models (`SCAPolicy`, `SCAScanReport`, `AgentInventoryHardware`, `AgentInventoryOS`, `AgentInventoryPackage`, `AgentInventoryNetwork`, `AgentInventoryPort`, `AgentInventoryProcess`, `ActiveResponseTask`, `CVEItem`, `VulnerabilityFinding`, `VulnerabilityScanReport`).
+
+Remaining Tasks:
+1. Initialize/update `progress.md` and `BRIEFING.md` in `d:/ARKA/.agents/worker_m1`.
+2. Inspect `backend/app/schemas/schemas.py` and implement all Pydantic v2 schemas for the new models:
+   - SCA schemas: `SCAPolicyBase`, `SCAPolicyCreate`, `SCAPolicyRead`, `SCACheckResult`, `SCAScanReportRead`, `SCASummary`
+   - Inventory schemas: `HardwareInventoryRead`, `OSInventoryRead`, `PackageInventoryRead`, `NetworkInventoryRead`, `PortInventoryRead`, `ProcessInventoryRead`, `InventorySnapshotPayload`, `AgentInventorySummary`
+   - Active Response schemas: `ActiveResponseTaskCreate`, `ActiveResponseTaskRead`, `ActiveResponseStatusUpdate`, `ActiveResponseTriggerRequest`
+   - Vulnerability schemas: `CVEItemBase`, `CVEItemRead`, `VulnerabilityFindingRead`, `VulnerabilityScanReportRead`, `VulnerabilityStatusUpdate`, `VulnerabilityScanPayload`
+3. Expand `backend/tests/test_persistence.py` with comprehensive async persistence tests for all 12 models (creating records, querying by tenant_id, relationship checks, enum checks).
+4. Run verification commands:
+   - `python -m pytest backend/tests -v`
    - `ruff check backend`
    - `mypy backend/app`
    - `bandit -r backend/app -ll`
-6. Write `handoff.md` with complete test output, commands, and verification results, then send a message when done.
+5. Write `handoff.md` with complete command outputs and verification details, and send a message when done.
