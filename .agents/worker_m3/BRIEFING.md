@@ -1,4 +1,4 @@
-# BRIEFING — 2026-08-26T09:20:00Z
+# BRIEFING — 2026-08-27T09:44:00Z
 
 ## Mission
 Implement Milestone M3: Security Configuration Assessment (SCA) & CIS Benchmarks Engine across agent and backend with zero mock data and genuine multi-platform evaluation.
@@ -27,16 +27,21 @@ Implement Milestone M3: Security Configuration Assessment (SCA) & CIS Benchmarks
 
 ## Current Parent
 - Conversation ID: 2bac8ff3-063e-412a-ae38-31580c635708
-- Updated: not yet
+- Updated: 2026-08-27T09:44:00Z
 
 ## Task Summary
 - **What to build**: Full Security Configuration Assessment (SCA) scanner for the agent and SCA evaluation/ingestion engine with REST API endpoints on the backend.
 - **Success criteria**: All tests pass, lint passes, type checking passes, security scans pass, zero fake mock data.
-- **Interface contracts**: PROJECT.md, models in `backend/app/models`, schemas in `backend/app/schemas`.
+- **Interface contracts**: PROJECT.md, models in `backend/app/models/models.py`, schemas in `backend/app/schemas/schemas.py`.
 - **Code layout**: Agent in `agent/arka_agent`, backend in `backend/app`.
 
 ## Key Decisions Made
-- [TBD]
+- `SCAScanner` subclasses `BaseCollector(name="sca", enabled=enabled)` with `collect() -> list[dict[str, Any]]` and `run_full_scan() -> dict[str, Any]`.
+- Implement genuine rule evaluation helpers for regex, stat permissions/mode/ownership, registry keys (with cross-platform safe evaluation), and subprocess commands.
+- Implement comprehensive CIS Linux v2.0 checks & Windows CIS benchmark checks.
+- Zero fake PASS data: evaluation strictly assesses files/registry/commands with error resilience.
+- `SCAEngine` uses SQLAlchemy async queries on `SCAScanReport` and `SCAPolicy`.
+- Router in `backend/app/api/v1/endpoints/sca.py` implements `/report`, `/`, `/reports/{agent_id}`, `/summary`, `/policies`.
 
 ## Artifact Index
 - `.agents/worker_m3/DISPATCH.md` — Assignment instructions
@@ -44,14 +49,15 @@ Implement Milestone M3: Security Configuration Assessment (SCA) & CIS Benchmarks
 - `.agents/worker_m3/BRIEFING.md` — Agent state memory
 
 ## Change Tracker
-- **Files modified**: None yet
-- **Build status**: Untested
-- **Pending issues**: None
+- **Files modified**: `d:/ARKA/.agents/worker_m3/progress.md`, `d:/ARKA/.agents/worker_m3/BRIEFING.md`
+- **Build status**: Initial tests verified
+- **Pending issues**: Implement 5 target files
 
 ## Quality Status
-- **Build/test result**: Untested
-- **Lint status**: Untested
-- **Tests added/modified**: Untested
+- **Build/test result**: In-progress
+- **Lint status**: Ruff clean
+- **Tests added/modified**: Pending
 
 ## Loaded Skills
 - None
+

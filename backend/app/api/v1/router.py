@@ -16,6 +16,7 @@ from app.api.v1.endpoints import (
     health,
     incidents,
     inventory,
+    query,
     rules,
     sca,
     vulnerabilities,
@@ -43,5 +44,6 @@ api_router.include_router(
 api_router.include_router(
     cloud_container.router, prefix="/cloud_container", tags=["Container & Cloud Security"]
 )
+api_router.include_router(query.router, prefix="/query", tags=["ARKA Security Query Language"])
 api_router.include_router(rules.router, prefix="/rules", tags=["Detection Rules"])
 api_router.include_router(dashboard.router, prefix="/dashboard", tags=["SOC Dashboard"])
