@@ -1,6 +1,6 @@
 # Issue #11: Implement Container & Cloud Security Harvesters (Docker/K8s & CloudTrail Harvester)
 
-- **Status**: `[IN_PROGRESS]`
+- **Status**: `[RESOLVED]`
 - **Severity**: `HIGH`
 - **Component**: `agent/arka_agent/collectors/cloud_container.py`, `backend/app/services/cloud_container_service.py`, `backend/app/api/v1/endpoints/cloud_container.py`
 - **Reporter**: Lead Cybersecurity Architect
