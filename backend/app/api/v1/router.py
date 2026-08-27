@@ -20,6 +20,7 @@ from app.api.v1.endpoints import (
     reports,
     rules,
     sca,
+    threat_hunting,
     vulnerabilities,
     webhooks,
 )
@@ -49,5 +50,8 @@ api_router.include_router(
 api_router.include_router(query.router, prefix="/query", tags=["ARKA Security Query Language"])
 api_router.include_router(webhooks.router, prefix="/webhooks", tags=["Webhook Alerting"])
 api_router.include_router(reports.router, prefix="/reports", tags=["Executive Security Reports"])
+api_router.include_router(
+    threat_hunting.router, prefix="/threat_hunting", tags=["Threat Hunting Playbooks"]
+)
 api_router.include_router(rules.router, prefix="/rules", tags=["Detection Rules"])
 api_router.include_router(dashboard.router, prefix="/dashboard", tags=["SOC Dashboard"])
