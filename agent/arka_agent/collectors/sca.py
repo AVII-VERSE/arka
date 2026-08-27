@@ -96,12 +96,21 @@ class SCAScanner(BaseCollector):
 
             # Mode check: Ensure no permission bits outside max_mode are set
             if max_mode is not None:
-                forbidden_bits = mode & ~max_mode
-                if forbidden_bits != 0:
-                    return (
-                        "FAIL",
-                        f"File '{path}' mode {oct(mode)} is less restrictive than maximum allowed {oct(max_mode)} (excess bits: {oct(forbidden_bits)}).",
-                    )
+                if sys.platform == "win32":
+                    is_writable = bool(file_stat.st_mode & stat.S_IWRITE)
+                    max_allows_write = bool(max_mode & 0o200)
+                    if not max_allows_write and is_writable:
+                        return (
+                            "FAIL",
+                            f"File '{path}' is writable on Windows, but max_mode {oct(max_mode)} requires read-only.",
+                        )
+                else:
+                    forbidden_bits = mode & ~max_mode
+                    if forbidden_bits != 0:
+                        return (
+                            "FAIL",
+                            f"File '{path}' mode {oct(mode)} is less restrictive than maximum allowed {oct(max_mode)} (excess bits: {oct(forbidden_bits)}).",
+                        )
 
             # SUID / SGID checks
             if check_suid and hasattr(stat, "S_ISUID") and (file_stat.st_mode & stat.S_ISUID):
@@ -935,7 +944,7 @@ class SCAScanner(BaseCollector):
                 timeout=5.0,
                 check=False,
             )
-            if re.search(r"Account active\s+No", result.stdout, re.IGNORECASE):
+            if re.search(r"Account active[\s:]+No", result.stdout, re.IGNORECASE):
                 return self._build_check_result(
                     "CIS-WIN-1.6",
                     "Ensure Guest Account Status is Disabled",
@@ -944,7 +953,7 @@ class SCAScanner(BaseCollector):
                     "No action required.",
                     ["CIS Windows Benchmark § 2.3.1.1"],
                 )
-            elif re.search(r"Account active\s+Yes", result.stdout, re.IGNORECASE):
+            elif re.search(r"Account active[\s:]+Yes", result.stdout, re.IGNORECASE):
                 return self._build_check_result(
                     "CIS-WIN-1.6",
                     "Ensure Guest Account Status is Disabled",

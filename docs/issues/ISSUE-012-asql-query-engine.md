@@ -1,6 +1,6 @@
 # Issue #12: Implement ARKA Security Query Language (ASQL) Engine
 
-- **Status**: `[IN_PROGRESS]`
+- **Status**: `[RESOLVED]`
 - **Severity**: `HIGH`
 - **Component**: `backend/app/services/asql_engine.py`, `backend/app/api/v1/endpoints/query.py`
 - **Reporter**: Lead Cybersecurity Architect
