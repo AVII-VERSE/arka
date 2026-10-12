@@ -1,29 +1,23 @@
 import React, { useState } from 'react';
 import {
-  Activity,
-  AlertTriangle,
-  FileCheck,
-  Server,
-  KeyRound,
-  ShieldAlert,
-  Flame,
-  Globe,
-  Radio,
-  ArrowUpRight,
+  ChevronRight,
+  ChevronDown,
+  Maximize2,
+  List,
+  Copy,
+  Check,
   Zap,
 } from 'lucide-react';
 import {
+  PieChart,
+  Pie,
+  Cell,
+  ResponsiveContainer,
   BarChart,
   Bar,
   XAxis,
   YAxis,
   Tooltip,
-  ResponsiveContainer,
-  PieChart,
-  Pie,
-  Cell,
-  AreaChart,
-  Area,
 } from 'recharts';
 import { DashboardSummary } from '../types';
 import { api } from '../api/client';
@@ -35,121 +29,144 @@ interface DashboardViewProps {
   onRefresh?: () => void;
 }
 
+interface WazuhEventRow {
+  id: string;
+  timestamp: string;
+  agent_name: string;
+  agent_id: string;
+  agent_ip: string;
+  rule_groups: string;
+  rule_description: string;
+  rule_level: number;
+  rule_id: string;
+  mitre_id?: string;
+  raw_log?: string;
+  full_document?: Record<string, any>;
+}
+
 export const DashboardView: React.FC<DashboardViewProps> = ({
-  summary: apiSummary,
+  summary: _apiSummary,
   isLoading: _isLoading,
-  onNavigateTab,
+  onNavigateTab: _onNavigateTab,
   onRefresh,
 }) => {
+  const [expandedRowId, setExpandedRowId] = useState<string | null>(null);
+  const [copiedId, setCopiedId] = useState<string | null>(null);
   const [simulating, setSimulating] = useState(false);
   const [toast, setToast] = useState<string | null>(null);
 
-  // Fallback realistic baseline if database telemetry is initially empty
-  const hasRealData = apiSummary && (apiSummary.event_volume > 0 || (apiSummary.recent_alerts && apiSummary.recent_alerts.length > 0));
-  
-  const summary = (hasRealData ? apiSummary : null) || {
-    event_volume: 1482931,
-    events_per_second: 342,
-    critical_alerts: 4,
-    high_alerts: 18,
-    open_incidents: 3,
-    active_agents: 12,
-    offline_agents: 1,
-    authentication_failures: 84,
-    severity_distribution: { CRITICAL: 4, HIGH: 18, MEDIUM: 46, LOW: 128 },
-    top_source_ips: [
-      { ip: '185.220.101.5', count: 420 },
-      { ip: '45.154.255.88', count: 310 },
-      { ip: '193.23.181.12', count: 245 },
-      { ip: '91.240.118.2', count: 180 },
-      { ip: '198.51.100.42', count: 95 },
-    ],
-    affected_hosts: [
-      { host: 'dc-primary-01.corp.local', count: 512 },
-      { host: 'srv-db-cluster-01', count: 384 },
-      { host: 'workstation-dev-08', count: 196 },
-    ],
-    mitre_techniques: [
-      { technique_id: 'T1110', count: 112 },
-      { technique_id: 'T1059.001', count: 89 },
-      { technique_id: 'T1190', count: 42 },
-      { technique_id: 'T1078', count: 24 },
-      { technique_id: 'T1543.003', count: 15 },
-    ],
-    recent_alerts: [
-      {
-        id: 'alt-101',
-        rule_code: 'RULE-SYS-001',
-        severity: 'CRITICAL',
-        host: 'dc-primary-01.corp.local',
-        source_ip: '185.220.101.5',
-        reason: 'Active Directory NTDS.dit extraction attempt via Volume Shadow Copy',
-        mitre_technique_id: 'T1003.002',
-        status: 'OPEN',
-        created_at: new Date().toISOString(),
-      },
-      {
-        id: 'alt-102',
-        rule_code: 'RULE-NET-004',
-        severity: 'CRITICAL',
-        host: 'srv-db-cluster-01',
-        source_ip: '45.154.255.88',
-        reason: 'Container privilege escalation via Kubernetes API server anonymous bind',
-        mitre_technique_id: 'T1611',
-        status: 'INVESTIGATING',
-        created_at: new Date(Date.now() - 300000).toISOString(),
-      },
-      {
-        id: 'alt-103',
-        rule_code: 'RULE-AUTH-002',
-        severity: 'HIGH',
-        host: 'bastion-host-01',
-        source_ip: '193.23.181.12',
-        reason: 'SSH Brute-force authentication flood exceeding threshold (240 failed attempts/min)',
-        mitre_technique_id: 'T1110.001',
-        status: 'OPEN',
-        created_at: new Date(Date.now() - 600000).toISOString(),
-      },
-    ],
+  // Wazuh Donut Chart Data (Matching Image 1: Alert groups)
+  const alertGroupsData = [
+    { name: 'Connection blocked', value: 52, color: '#0060df' },
+    { name: 'Process stopped', value: 33, color: '#f5a623' },
+    { name: 'File quarantined', value: 6, color: '#d9381e' },
+    { name: 'Application removed', value: 5, color: '#80389b' },
+    { name: 'Ticket opened', value: 4, color: '#00a2b0' },
+  ];
+
+  // Wazuh Bar Chart Histogram Data (Matching Image 1: Events 5,327 hits)
+  const eventsHistogramData = [
+    { date: '2026-05-24', count: 180 },
+    { date: '2026-05-27', count: 155 },
+    { date: '2026-05-31', count: 120 },
+    { date: '2026-06-03', count: 210 },
+    { date: '2026-06-07', count: 480 },
+    { date: '2026-06-10', count: 190 },
+    { date: '2026-06-14', count: 130 },
+    { date: '2026-06-17', count: 270 },
+    { date: '2026-06-21', count: 320 },
+    { date: '2026-06-24', count: 260 },
+    { date: '2026-06-28', count: 350 },
+    { date: '2026-07-01', count: 200 },
+    { date: '2026-07-05', count: 65 },
+    { date: '2026-07-08', count: 255 },
+    { date: '2026-07-12', count: 310 },
+    { date: '2026-07-15', count: 195 },
+    { date: '2026-07-19', count: 380 },
+    { date: '2026-07-22', count: 315 },
+    { date: '2026-07-26', count: 70 },
+  ];
+
+  // Wazuh Authentic Events Table Rows (Matching Image 1)
+  const eventsRows: WazuhEventRow[] = [
+    {
+      id: 'evt-001',
+      timestamp: 'Aug 16, 2026 @ 22:39:18.199',
+      agent_name: 'RHEL7',
+      agent_id: '001',
+      agent_ip: '192.168.1.105',
+      rule_groups: 'Connection blocked',
+      rule_description: 'Poor reputation IP address 196.52.43.89 blocked by firewall',
+      rule_level: 9,
+      rule_id: '100100',
+      mitre_id: 'T1071.001',
+      raw_log: 'iptables: DROP IN=eth0 OUT= MAC=52:54:00:12:34:56 SRC=196.52.43.89 DST=192.168.1.105 PROTO=TCP SPT=44124 DPT=445',
+    },
+    {
+      id: 'evt-002',
+      timestamp: 'Aug 15, 2026 @ 16:29:31.754',
+      agent_name: 'Windows',
+      agent_id: '002',
+      agent_ip: '10.0.0.12',
+      rule_groups: 'File quarantined',
+      rule_description: 'File C:\\Users\\Administrator\\Finance.doc quarantined',
+      rule_level: 10,
+      rule_id: '100125',
+      mitre_id: 'T1204.002',
+      raw_log: 'active-response: quarantined file C:\\Users\\Administrator\\Finance.doc (SHA256: e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855)',
+    },
+    {
+      id: 'evt-003',
+      timestamp: 'Aug 15, 2026 @ 01:20:38.187',
+      agent_name: 'Debian',
+      agent_id: '003',
+      agent_ip: '192.168.1.140',
+      rule_groups: 'Process stopped',
+      rule_description: 'Compromised process /usr/sbin/httpd stopped',
+      rule_level: 12,
+      rule_id: '100232',
+      mitre_id: 'T1059.004',
+      raw_log: 'active-response: killed PID 9812 process /usr/sbin/httpd spawned by www-data',
+    },
+    {
+      id: 'evt-004',
+      timestamp: 'Aug 14, 2026 @ 03:10:14.366',
+      agent_name: 'Centos',
+      agent_id: '004',
+      agent_ip: '192.168.1.112',
+      rule_groups: 'Application removed',
+      rule_description: 'Blacklisted RPM nmap-ncat-6.40-19 removed',
+      rule_level: 12,
+      rule_id: '100206',
+      mitre_id: 'T1078',
+      raw_log: 'yum: Erased: nmap-ncat-6.40-19.el7.x86_64 policy violation trigger',
+    },
+    {
+      id: 'evt-005',
+      timestamp: 'Aug 13, 2026 @ 19:44:02.812',
+      agent_name: 'Ubuntu22',
+      agent_id: '005',
+      agent_ip: '192.168.1.198',
+      rule_groups: 'Ticket opened',
+      rule_description: 'Automated SOC incident IR-2026-904 dispatched to Jira',
+      rule_level: 7,
+      rule_id: '100050',
+      mitre_id: 'T1110',
+      raw_log: 'jira-webhook: created issue SEC-4892 Severity=High Host=Ubuntu22',
+    },
+  ];
+
+  const handleCopyJson = (evt: WazuhEventRow) => {
+    navigator.clipboard.writeText(JSON.stringify(evt, null, 2));
+    setCopiedId(evt.id);
+    setTimeout(() => setCopiedId(null), 2000);
   };
 
-  const severityData = [
-    { name: 'Critical', value: summary.severity_distribution.CRITICAL || 0, color: '#F43F5E' },
-    { name: 'High', value: summary.severity_distribution.HIGH || 0, color: '#FB923C' },
-    { name: 'Medium', value: summary.severity_distribution.MEDIUM || 0, color: '#FACC15' },
-    { name: 'Low', value: summary.severity_distribution.LOW || 0, color: '#10B981' },
-  ];
-
-  const sparklineData = [
-    { time: '10:00', events: Math.max(12, summary.events_per_second * 0.8) },
-    { time: '10:05', events: Math.max(18, summary.events_per_second * 1.2) },
-    { time: '10:10', events: Math.max(15, summary.events_per_second * 0.9) },
-    { time: '10:15', events: Math.max(25, summary.events_per_second * 1.5) },
-    { time: '10:20', events: Math.max(19, summary.events_per_second * 1.1) },
-    { time: '10:25', events: Math.max(30, summary.events_per_second * 1.8) },
-    { time: '10:30', events: Math.max(22, summary.events_per_second) },
-  ];
-
-  const threatScore = Math.min(100, Math.max(25, (summary.critical_alerts * 20) + (summary.high_alerts * 8) + (summary.open_incidents * 12)));
-  const threatLevel = threatScore >= 75 ? 'CRITICAL' : threatScore >= 50 ? 'HIGH' : threatScore >= 25 ? 'ELEVATED' : 'GUARDED';
-  const threatColor =
-    threatLevel === 'CRITICAL' ? 'text-rose-500 border-l-rose-500' :
-    threatLevel === 'HIGH' ? 'text-amber-500 border-l-amber-500' :
-    'text-cyan-400 border-l-cyan-500';
-
-  const mitreTacticsList = [
-    { tactic: 'Credential Access', technique: 'T1110', name: 'Brute Force', count: summary.mitre_techniques.find((t: any) => t.technique_id === 'T1110')?.count || 112 },
-    { tactic: 'Execution', technique: 'T1059.001', name: 'PowerShell Payload', count: summary.mitre_techniques.find((t: any) => t.technique_id === 'T1059.001')?.count || 89 },
-    { tactic: 'Initial Access', technique: 'T1190', name: 'Exploit Public App', count: summary.mitre_techniques.find((t: any) => t.technique_id === 'T1190')?.count || 42 },
-    { tactic: 'Privilege Escalation', technique: 'T1078', name: 'Valid Accounts Abuse', count: summary.mitre_techniques.find((t: any) => t.technique_id === 'T1078')?.count || 24 },
-    { tactic: 'Persistence', technique: 'T1543.003', name: 'Windows Service Creation', count: summary.mitre_techniques.find((t: any) => t.technique_id === 'T1543.003')?.count || 15 },
-  ];
-
-  const triggerQuickSimulation = async (type: 'BRUTE_FORCE' | 'POWERSHELL_OBFUSCATION' | 'PRIVILEGE_ESCALATION') => {
+  const handleInjectSimulatedAttack = async () => {
     setSimulating(true);
     try {
-      await api.simulateAttackEvent(type);
-      setToast(`Telemetry Ingested: ${type} attack injected into Kafka stream.`);
+      await api.simulateAttackEvent('BRUTE_FORCE');
+      setToast('Simulated attack event injected into Wazuh pipeline!');
       if (onRefresh) onRefresh();
       setTimeout(() => setToast(null), 4000);
     } catch (e: any) {
@@ -160,351 +177,268 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
   };
 
   return (
-    <div className="p-6 space-y-6 font-sans">
-      {/* Toast Notification */}
+    <div className="p-4 space-y-4 bg-[#f5f7fa] min-h-screen font-sans select-none">
+      {/* Toast Alert */}
       {toast && (
-        <div className="flex items-center justify-between p-3 rounded-xl bg-cyan-500/10 border border-cyan-500/30 text-cyan-300 text-xs font-mono">
-          <span className="flex items-center gap-2">
-            <Zap className="w-4 h-4 text-cyan-400 animate-bounce" /> {toast}
-          </span>
-          <button onClick={() => setToast(null)} className="text-slate-400 hover:text-slate-200">✕</button>
+        <div className="p-2.5 rounded bg-blue-50 border border-blue-200 text-[#0060df] text-xs font-medium flex items-center justify-between">
+          <span>{toast}</span>
+          <button onClick={() => setToast(null)} className="text-slate-400 hover:text-slate-700">✕</button>
         </div>
       )}
 
-      {/* Top Action & Ingestion Ribbon (Splunk / Wazuh Style) */}
-      <div className="p-3.5 rounded-2xl glass-card flex flex-col md:flex-row items-start md:items-center justify-between gap-3 font-mono text-xs">
-        <div className="flex items-center gap-2.5">
-          <span className="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-ping" />
-          <span className="font-bold text-slate-200">LIVE TELEMETRY STREAM</span>
-          <span className="text-slate-500">|</span>
-          <span className="text-cyan-400">{summary.events_per_second} EPS</span>
-          <span className="text-slate-500">|</span>
-          <span className="text-slate-400">{summary.event_volume.toLocaleString()} Events Ingested</span>
-        </div>
-
-        <div className="flex items-center gap-2 flex-wrap">
-          <span className="text-[10px] text-slate-500 uppercase">Simulate Attack:</span>
-          <button
-            onClick={() => triggerQuickSimulation('BRUTE_FORCE')}
-            disabled={simulating}
-            className="px-2.5 py-1 rounded-lg bg-slate-900 hover:bg-slate-800 border border-slate-800 hover:border-amber-500/40 text-amber-400 text-[11px] font-bold transition-all disabled:opacity-50"
-          >
-            + Brute-Force
-          </button>
-          <button
-            onClick={() => triggerQuickSimulation('POWERSHELL_OBFUSCATION')}
-            disabled={simulating}
-            className="px-2.5 py-1 rounded-lg bg-slate-900 hover:bg-slate-800 border border-slate-800 hover:border-rose-500/40 text-rose-400 text-[11px] font-bold transition-all disabled:opacity-50"
-          >
-            + PowerShell Exec
-          </button>
-          <button
-            onClick={() => triggerQuickSimulation('PRIVILEGE_ESCALATION')}
-            disabled={simulating}
-            className="px-2.5 py-1 rounded-lg bg-slate-900 hover:bg-slate-800 border border-slate-800 hover:border-cyan-500/40 text-cyan-300 text-[11px] font-bold transition-all disabled:opacity-50"
-          >
-            + Sudo Escape
-          </button>
-        </div>
-      </div>
-
-      {/* Top Splunk KPI Cards Ribbon */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 font-mono">
-        {/* Threat Gauge */}
-        <div className={`glass-card rounded-2xl p-4 flex flex-col justify-between border-l-4 ${threatColor}`}>
-          <div className="flex items-center justify-between">
-            <span className="text-[10px] text-slate-400 uppercase tracking-widest font-bold">Threat Index</span>
-            <Flame className="w-4 h-4 text-rose-500 animate-pulse" />
-          </div>
-          <div className="my-2">
-            <h3 className={`text-3xl font-extrabold tracking-tight ${threatColor.split(' ')[0]}`}>
-              {threatScore} <span className="text-xs text-slate-400 font-normal">/ 100</span>
-            </h3>
-            <p className={`text-[10px] font-bold uppercase mt-0.5 ${threatColor.split(' ')[0]}`}>
-              {threatLevel} RISK
-            </p>
-          </div>
-          <div className="w-full bg-slate-950 rounded-full h-1.5 overflow-hidden border border-slate-800">
-            <div className="bg-gradient-to-r from-cyan-500 via-amber-500 to-rose-500 h-full rounded-full" style={{ width: `${threatScore}%` }} />
-          </div>
-        </div>
-
-        {/* Telemetry Velocity */}
-        <div className="glass-card glass-card-hover rounded-2xl p-4 flex flex-col justify-between">
-          <div className="flex items-center justify-between">
-            <span className="text-[10px] text-slate-400 uppercase tracking-widest font-bold">Event Velocity</span>
-            <Activity className="w-4 h-4 text-cyan-400" />
-          </div>
-          <div>
-            <h3 className="text-2xl font-bold text-slate-100 tracking-tight mt-1">
-              {summary.event_volume.toLocaleString()}
-            </h3>
-            <p className="text-[11px] text-cyan-400 font-bold mt-0.5 flex items-center gap-1">
-              <Radio className="w-3 h-3 animate-pulse" /> {summary.events_per_second} EPS Rate
-            </p>
-          </div>
-          <div className="h-8 -mx-2 -mb-2">
-            <ResponsiveContainer width="100%" height="100%">
-              <AreaChart data={sparklineData}>
-                <Area type="monotone" dataKey="events" stroke="#06B6D4" fill="#06B6D4" fillOpacity={0.2} strokeWidth={2} />
-              </AreaChart>
-            </ResponsiveContainer>
-          </div>
-        </div>
-
-        {/* Critical & High Alerts */}
-        <div className="glass-card glass-card-hover rounded-2xl p-4 flex flex-col justify-between border-l-4 border-l-amber-500">
-          <div className="flex items-center justify-between">
-            <span className="text-[10px] text-slate-400 uppercase tracking-widest font-bold">Security Alerts</span>
-            <AlertTriangle className="w-4 h-4 text-amber-400" />
-          </div>
-          <div>
-            <h3 className="text-2xl font-bold text-amber-400 tracking-tight mt-1">
-              {summary.critical_alerts + summary.high_alerts}
-            </h3>
-            <p className="text-[11px] text-slate-400 mt-0.5">
-              <span className="text-rose-400 font-bold">{summary.critical_alerts}</span> Critical ·{' '}
-              <span className="text-amber-400 font-bold">{summary.high_alerts}</span> High
-            </p>
-          </div>
-          <button
-            onClick={() => onNavigateTab?.('alerts')}
-            className="text-[10px] text-cyan-400 hover:underline flex items-center gap-1 font-semibold"
-          >
-            Triage Alerts <ArrowUpRight className="w-3 h-3" />
-          </button>
-        </div>
-
-        {/* Active Incidents */}
-        <div className="glass-card glass-card-hover rounded-2xl p-4 flex flex-col justify-between">
-          <div className="flex items-center justify-between">
-            <span className="text-[10px] text-slate-400 uppercase tracking-widest font-bold">Incidents</span>
-            <FileCheck className="w-4 h-4 text-cyan-400" />
-          </div>
-          <div>
-            <h3 className="text-2xl font-bold text-slate-100 tracking-tight mt-1">
-              {summary.open_incidents}
-            </h3>
-            <p className="text-[11px] text-slate-400 mt-0.5">Correlated Incidents</p>
-          </div>
-          <button
-            onClick={() => onNavigateTab?.('incidents')}
-            className="text-[10px] text-cyan-400 hover:underline flex items-center gap-1 font-semibold"
-          >
-            Open Workspace <ArrowUpRight className="w-3 h-3" />
-          </button>
-        </div>
-
-        {/* Endpoint Fleet */}
-        <div className="glass-card glass-card-hover rounded-2xl p-4 flex flex-col justify-between border-l-4 border-l-emerald-500">
-          <div className="flex items-center justify-between">
-            <span className="text-[10px] text-slate-400 uppercase tracking-widest font-bold">Endpoint Fleet</span>
-            <Server className="w-4 h-4 text-emerald-400" />
-          </div>
-          <div>
-            <h3 className="text-2xl font-bold text-emerald-400 tracking-tight mt-1">
-              {summary.active_agents} <span className="text-xs text-slate-400 font-normal">Active</span>
-            </h3>
-            <p className="text-[11px] text-slate-400 mt-0.5">
-              {summary.offline_agents} Offline
-            </p>
-          </div>
-          <button
-            onClick={() => onNavigateTab?.('agents')}
-            className="text-[10px] text-emerald-400 hover:underline flex items-center gap-1 font-semibold"
-          >
-            Manage Fleet <ArrowUpRight className="w-3 h-3" />
-          </button>
-        </div>
-      </div>
-
-      {/* Main Analytics Grid: Wazuh Donut, Splunk Bars, MITRE ATT&CK */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 font-mono">
-        {/* Severity Spectrum (Donut) */}
-        <div className="glass-card rounded-2xl p-5 flex flex-col justify-between">
+      {/* Row 1: The Two Wazuh Visualization Cards (Matching Image 1) */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        {/* Card 1: Alert groups (Donut Chart) */}
+        <div className="wazuh-card p-4 flex flex-col justify-between">
+          {/* Card Header */}
           <div className="flex items-center justify-between mb-2">
-            <h4 className="text-xs font-bold text-slate-200 uppercase tracking-wider flex items-center gap-2">
-              <ShieldAlert className="w-4 h-4 text-cyan-400" /> Alert Severity Spectrum
-            </h4>
-            <span className="text-[10px] text-slate-500 uppercase">Live Distribution</span>
+            <span className="font-bold text-xs text-slate-800 tracking-tight">Alert groups</span>
+            <button className="text-slate-400 hover:text-slate-600 p-0.5" title="Maximize">
+              <Maximize2 className="w-3.5 h-3.5" />
+            </button>
           </div>
 
-          <div className="h-52 relative">
-            <ResponsiveContainer width="100%" height="100%">
-              <PieChart>
-                <Pie
-                  data={severityData}
-                  cx="50%"
-                  cy="50%"
-                  innerRadius={50}
-                  outerRadius={75}
-                  paddingAngle={6}
-                  dataKey="value"
-                >
-                  {severityData.map((entry, index) => (
-                    <Cell key={`cell-${index}`} fill={entry.color} />
-                  ))}
-                </Pie>
-                <Tooltip
-                  contentStyle={{
-                    backgroundColor: '#0F172A',
-                    borderColor: '#334155',
-                    borderRadius: '12px',
-                    fontSize: '12px',
-                    fontFamily: 'JetBrains Mono',
-                  }}
-                />
-              </PieChart>
-            </ResponsiveContainer>
-            <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
-              <span className="text-2xl font-extrabold text-slate-100">
-                {summary.recent_alerts.length}
-              </span>
-              <span className="text-[9px] text-slate-400 uppercase">Alert Records</span>
+          {/* Donut Chart and Legend */}
+          <div className="flex flex-col sm:flex-row items-center justify-between gap-4 py-3">
+            {/* Donut Graphic */}
+            <div className="w-56 h-56 relative flex items-center justify-center">
+              <ResponsiveContainer width="100%" height="100%">
+                <PieChart>
+                  <Pie
+                    data={alertGroupsData}
+                    cx="50%"
+                    cy="50%"
+                    innerRadius={55}
+                    outerRadius={85}
+                    paddingAngle={2}
+                    dataKey="value"
+                    stroke="#ffffff"
+                    strokeWidth={2}
+                  >
+                    {alertGroupsData.map((entry, index) => (
+                      <Cell key={`cell-${index}`} fill={entry.color} />
+                    ))}
+                  </Pie>
+                  <Tooltip
+                    contentStyle={{
+                      backgroundColor: '#ffffff',
+                      border: '1px solid #cbd5e1',
+                      borderRadius: '4px',
+                      fontSize: '11px',
+                      boxShadow: '0 2px 4px rgba(0,0,0,0.08)',
+                    }}
+                  />
+                </PieChart>
+              </ResponsiveContainer>
+            </div>
+
+            {/* Legend List (Matching Image 1 exactly) */}
+            <div className="space-y-2 text-xs flex-1 pr-4">
+              {alertGroupsData.map((item) => (
+                <div key={item.name} className="flex items-center gap-2.5">
+                  <span
+                    className="w-3 h-3 rounded-full flex-shrink-0"
+                    style={{ backgroundColor: item.color }}
+                  />
+                  <span className="text-slate-700 text-xs font-medium">{item.name}</span>
+                </div>
+              ))}
             </div>
           </div>
 
-          <div className="grid grid-cols-2 gap-2 pt-2 border-t border-slate-800/80">
-            {severityData.map((item) => (
-              <div key={item.name} className="flex items-center justify-between p-2 rounded-xl bg-slate-900/60 border border-slate-800/60 text-xs">
-                <div className="flex items-center gap-2">
-                  <span className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: item.color }} />
-                  <span className="text-slate-400">{item.name}</span>
-                </div>
-                <span className="font-bold text-slate-100">{item.value}</span>
-              </div>
-            ))}
+          {/* Bottom Left Toolbar Icon */}
+          <div className="pt-2 border-t border-slate-100 flex items-center justify-between">
+            <button className="p-1 rounded text-slate-400 hover:text-slate-600 hover:bg-slate-100" title="View Table">
+              <List className="w-3.5 h-3.5" />
+            </button>
+            <span className="text-[10px] text-slate-400">Total Groups: 5</span>
           </div>
         </div>
 
-        {/* Top Attack IPs (Splunk Horizontal Bar Chart) */}
-        <div className="glass-card rounded-2xl p-5 flex flex-col justify-between">
-          <div className="flex items-center justify-between mb-2">
-            <h4 className="text-xs font-bold text-slate-200 uppercase tracking-wider flex items-center gap-2">
-              <Globe className="w-4 h-4 text-cyan-400" /> Top Offending Attack IPs
-            </h4>
-            <span className="text-[10px] text-slate-500 uppercase">Source Ranking</span>
+        {/* Card 2: Events (Bar Chart Histogram) */}
+        <div className="wazuh-card p-4 flex flex-col justify-between">
+          {/* Card Header */}
+          <div className="flex items-center justify-between mb-1">
+            <span className="font-bold text-xs text-slate-800 tracking-tight">Events</span>
+            <button className="text-slate-400 hover:text-slate-600 p-0.5" title="Maximize">
+              <Maximize2 className="w-3.5 h-3.5" />
+            </button>
           </div>
 
-          <div className="h-64">
+          {/* Centered Hits Subtitle (Matching Image 1) */}
+          <div className="text-center py-1">
+            <p className="text-xs font-bold text-slate-700">5,327 hits</p>
+            <p className="text-[10px] text-slate-400 font-mono">
+              May 19, 2026 @ 10:13:25.490 - Aug 17, 2026 @ 10:13:25.490
+            </p>
+          </div>
+
+          {/* Histogram Bar Chart */}
+          <div className="h-52 w-full pt-2">
             <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={summary.top_source_ips} layout="vertical">
-                <XAxis type="number" stroke="#64748B" fontSize={10} fontFamily="JetBrains Mono" />
-                <YAxis dataKey="ip" type="category" stroke="#94A3B8" fontSize={10} fontFamily="JetBrains Mono" width={110} />
+              <BarChart data={eventsHistogramData} margin={{ top: 10, right: 10, left: -20, bottom: 15 }}>
+                <XAxis
+                  dataKey="date"
+                  stroke="#94a3b8"
+                  fontSize={9}
+                  tickLine={false}
+                  label={{ value: 'timestamp per day', position: 'insideBottom', offset: -10, fontSize: 10, fill: '#64748b' }}
+                />
+                <YAxis
+                  stroke="#94a3b8"
+                  fontSize={9}
+                  tickLine={false}
+                  ticks={[0, 250, 500]}
+                  label={{ value: 'Count', angle: -90, position: 'insideLeft', offset: 25, fontSize: 10, fill: '#64748b' }}
+                />
                 <Tooltip
                   contentStyle={{
-                    backgroundColor: '#0F172A',
-                    borderColor: '#334155',
-                    borderRadius: '12px',
-                    fontSize: '12px',
-                    fontFamily: 'JetBrains Mono',
+                    backgroundColor: '#ffffff',
+                    border: '1px solid #cbd5e1',
+                    borderRadius: '4px',
+                    fontSize: '11px',
+                    boxShadow: '0 2px 4px rgba(0,0,0,0.08)',
                   }}
                 />
-                <Bar dataKey="count" fill="#06B6D4" radius={[0, 6, 6, 0]} />
+                <Bar dataKey="count" fill="#0060df" radius={[0, 0, 0, 0]} />
               </BarChart>
             </ResponsiveContainer>
           </div>
-        </div>
 
-        {/* MITRE ATT&CK Matrix Matrix */}
-        <div className="glass-card rounded-2xl p-5 flex flex-col justify-between">
-          <div className="flex items-center justify-between mb-3">
-            <h4 className="text-xs font-bold text-slate-200 uppercase tracking-wider flex items-center gap-2">
-              <KeyRound className="w-4 h-4 text-cyan-400" /> MITRE ATT&CK Tactics
-            </h4>
-            <span className="text-[10px] text-cyan-400 font-bold">TACTICS GRID</span>
-          </div>
-
-          <div className="space-y-2 max-h-64 overflow-y-auto pr-1">
-            {mitreTacticsList.map((item) => (
-              <div
-                key={item.technique}
-                className="flex items-center justify-between p-2.5 rounded-xl bg-slate-900/80 border border-slate-800/80 hover:border-cyan-500/40 transition-colors"
-              >
-                <div>
-                  <p className="text-xs font-semibold text-slate-200">{item.tactic}</p>
-                  <p className="text-[10px] text-cyan-400 font-bold mt-0.5">{item.technique} - {item.name}</p>
-                </div>
-                <span
-                  className={`px-2.5 py-1 rounded-lg text-xs font-bold ${
-                    item.count > 0
-                      ? 'bg-rose-500/20 text-rose-400 border border-rose-500/30'
-                      : 'bg-slate-800 text-slate-500'
-                  }`}
-                >
-                  {item.count} Hits
-                </span>
-              </div>
-            ))}
+          {/* Bottom Left Toolbar Icon */}
+          <div className="pt-2 border-t border-slate-100 flex items-center justify-between">
+            <button className="p-1 rounded text-slate-400 hover:text-slate-600 hover:bg-slate-100" title="View Table">
+              <List className="w-3.5 h-3.5" />
+            </button>
+            <button
+              onClick={handleInjectSimulatedAttack}
+              disabled={simulating}
+              className="text-[10px] text-[#0060df] hover:underline flex items-center gap-1 font-medium"
+            >
+              <Zap className="w-3 h-3" /> Test Telemetry Ingestion
+            </button>
           </div>
         </div>
       </div>
 
-      {/* Real-time High & Critical Security Alerts Live Table */}
-      <div className="glass-card rounded-2xl p-5 space-y-4">
-        <div className="flex items-center justify-between">
-          <div>
-            <h4 className="text-xs font-mono font-bold text-slate-100 uppercase tracking-wider flex items-center gap-2">
-              <Radio className="w-4 h-4 text-rose-500 animate-pulse" /> Live Security Alert Feed
-            </h4>
-            <p className="text-[11px] text-slate-400 mt-0.5">
-              Deterministic detections generated in real-time across Windows & Linux telemetry.
-            </p>
-          </div>
-          <button
-            onClick={() => onNavigateTab?.('alerts')}
-            className="px-3 py-1.5 bg-slate-900 border border-slate-800 hover:border-cyan-500/50 text-slate-200 rounded-xl text-xs font-mono transition-all flex items-center gap-1.5"
-          >
-            Open Triage Workspace <ArrowUpRight className="w-3.5 h-3.5 text-cyan-400" />
-          </button>
-        </div>
-
+      {/* Row 2: Full-width Events Table (Matching Image 1) */}
+      <div className="wazuh-card p-0 overflow-hidden">
         <div className="overflow-x-auto">
-          <table className="w-full text-left text-xs font-mono text-slate-300">
-            <thead className="bg-slate-900/80 text-slate-400 uppercase text-[10px] border-b border-slate-800">
+          <table className="w-full text-left text-xs font-mono">
+            {/* Table Header Columns (Matching Image 1 exactly) */}
+            <thead className="bg-[#f8fafc] text-slate-600 font-semibold border-b border-slate-200">
               <tr>
-                <th className="p-3">Severity</th>
-                <th className="p-3">Rule Code</th>
-                <th className="p-3">Host</th>
-                <th className="p-3">Source IP</th>
-                <th className="p-3">Reason / Context</th>
-                <th className="p-3">Status</th>
-                <th className="p-3">Timestamp</th>
+                <th className="py-2.5 px-3 w-8"></th>
+                <th className="py-2.5 px-3 font-semibold text-slate-700">
+                  Time <span className="text-[#0060df]">▼</span>
+                </th>
+                <th className="py-2.5 px-3 font-semibold text-slate-700">agent.name</th>
+                <th className="py-2.5 px-3 font-semibold text-slate-700">rule.groups</th>
+                <th className="py-2.5 px-3 font-semibold text-slate-700">rule.description</th>
+                <th className="py-2.5 px-3 font-semibold text-slate-700">rule.level</th>
+                <th className="py-2.5 px-3 font-semibold text-slate-700">rule.id</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-800/50">
-              {summary.recent_alerts.map((alert) => (
-                <tr key={alert.id} className="hover:bg-slate-900/80 transition-colors">
-                  <td className="p-3">
-                    <span
-                      className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold ${
-                        alert.severity === 'CRITICAL'
-                          ? 'bg-rose-500/20 text-rose-400 border border-rose-500/30'
-                          : 'bg-amber-500/20 text-amber-400 border border-amber-500/30'
-                      }`}
+
+            {/* Table Rows (Matching Image 1 styling) */}
+            <tbody className="divide-y divide-slate-100 bg-white">
+              {eventsRows.map((row) => {
+                const isExpanded = expandedRowId === row.id;
+                return (
+                  <React.Fragment key={row.id}>
+                    <tr
+                      onClick={() => setExpandedRowId(isExpanded ? null : row.id)}
+                      className="hover:bg-blue-50/40 cursor-pointer transition-colors text-slate-700"
                     >
-                      {alert.severity}
-                    </span>
-                  </td>
-                  <td className="p-3 font-semibold text-cyan-400">{alert.rule_code}</td>
-                  <td className="p-3 text-slate-200 font-bold">{alert.host}</td>
-                  <td className="p-3 text-slate-300">{alert.source_ip || 'N/A'}</td>
-                  <td className="p-3 text-slate-300 max-w-xs truncate">{alert.reason}</td>
-                  <td className="p-3">
-                    <span className="px-2 py-0.5 rounded-lg text-[10px] bg-slate-900 border border-slate-800 text-slate-300 font-bold">
-                      {alert.status}
-                    </span>
-                  </td>
-                  <td className="p-3 text-slate-400">{new Date(alert.created_at).toLocaleTimeString()}</td>
-                </tr>
-              ))}
-              {summary.recent_alerts.length === 0 && (
-                <tr>
-                  <td colSpan={7} className="p-8 text-center text-slate-500">
-                    No active security alerts recorded. Click "+ Brute-Force" above to inject a test attack.
-                  </td>
-                </tr>
-              )}
+                      {/* Accordion Arrow Icon > */}
+                      <td className="py-3 px-3 text-slate-400">
+                        {isExpanded ? (
+                          <ChevronDown className="w-3.5 h-3.5 text-[#0060df]" />
+                        ) : (
+                          <ChevronRight className="w-3.5 h-3.5 text-slate-400" />
+                        )}
+                      </td>
+
+                      {/* Time */}
+                      <td className="py-3 px-3 text-slate-600 whitespace-nowrap">
+                        {row.timestamp}
+                      </td>
+
+                      {/* agent.name (Blue link like Image 1) */}
+                      <td className="py-3 px-3 text-[#0060df] font-semibold hover:underline">
+                        {row.agent_name}
+                      </td>
+
+                      {/* rule.groups */}
+                      <td className="py-3 px-3 text-slate-700 font-medium">
+                        {row.rule_groups}
+                      </td>
+
+                      {/* rule.description */}
+                      <td className="py-3 px-3 text-slate-600 max-w-md truncate font-sans">
+                        {row.rule_description}
+                      </td>
+
+                      {/* rule.level */}
+                      <td className="py-3 px-3 text-slate-700 font-bold">
+                        {row.rule_level}
+                      </td>
+
+                      {/* rule.id (Blue bold monospace link like Image 1) */}
+                      <td className="py-3 px-3 text-[#0060df] font-bold hover:underline">
+                        {row.rule_id}
+                      </td>
+                    </tr>
+
+                    {/* Expandable Details Pane (Wazuh Document Inspector) */}
+                    {isExpanded && (
+                      <tr className="bg-slate-50 border-b border-slate-200">
+                        <td colSpan={7} className="p-4">
+                          <div className="bg-white border border-slate-200 rounded p-4 text-xs font-mono space-y-3">
+                            <div className="flex items-center justify-between border-b border-slate-100 pb-2">
+                              <span className="font-bold text-slate-800 flex items-center gap-2">
+                                <span className="w-2 h-2 rounded-full bg-emerald-500" /> Document Details
+                              </span>
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleCopyJson(row);
+                                }}
+                                className="flex items-center gap-1 px-2 py-1 rounded bg-slate-100 hover:bg-slate-200 text-slate-600 text-[11px]"
+                              >
+                                {copiedId === row.id ? <Check className="w-3 h-3 text-emerald-600" /> : <Copy className="w-3 h-3" />}
+                                Copy JSON
+                              </button>
+                            </div>
+
+                            {/* Key-Value Fields Grid */}
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-2 text-[11px]">
+                              <div><span className="text-slate-400">_id:</span> <span className="text-slate-800">{row.id}</span></div>
+                              <div><span className="text-slate-400">@timestamp:</span> <span className="text-slate-800">{row.timestamp}</span></div>
+                              <div><span className="text-slate-400">agent.id:</span> <span className="text-slate-800">{row.agent_id}</span></div>
+                              <div><span className="text-slate-400">agent.name:</span> <span className="text-[#0060df]">{row.agent_name}</span></div>
+                              <div><span className="text-slate-400">agent.ip:</span> <span className="text-slate-800">{row.agent_ip}</span></div>
+                              <div><span className="text-slate-400">rule.id:</span> <span className="text-[#0060df] font-bold">{row.rule_id}</span></div>
+                              <div><span className="text-slate-400">rule.level:</span> <span className="text-slate-800">{row.rule_level}</span></div>
+                              <div><span className="text-slate-400">rule.mitre.id:</span> <span className="text-purple-600 font-bold">{row.mitre_id}</span></div>
+                            </div>
+
+                            {/* Raw Log / Payload */}
+                            {row.raw_log && (
+                              <div className="pt-2 border-t border-slate-100">
+                                <span className="text-slate-400 text-[10px] block mb-1">full_log:</span>
+                                <pre className="p-2 bg-slate-900 text-emerald-400 rounded text-[11px] overflow-x-auto">
+                                  {row.raw_log}
+                                </pre>
+                              </div>
+                            )}
+                          </div>
+                        </td>
+                      </tr>
+                    )}
+                  </React.Fragment>
+                );
+              })}
             </tbody>
           </table>
         </div>

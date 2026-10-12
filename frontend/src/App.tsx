@@ -29,6 +29,7 @@ import {
 
 export const App: React.FC = () => {
   const [activeTab, setActiveTab] = useState<NavTab>('dashboard');
+  const [isSidebarOpen, setIsSidebarOpen] = useState<boolean>(false);
   const [summary, setSummary] = useState<DashboardSummary | undefined>();
   const [events, setEvents] = useState<SecurityEvent[]>([]);
   const [alerts, setAlerts] = useState<Alert[]>([]);
@@ -36,7 +37,7 @@ export const App: React.FC = () => {
   const [agents, setAgents] = useState<Agent[]>([]);
   const [rules, setRules] = useState<DetectionRule[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(true);
-  const [timeRange, setTimeRange] = useState<string>('1h');
+  const [timeRange, setTimeRange] = useState<string>('24h');
 
   // Modals & Drawers state
   const [showAuthModal, setShowAuthModal] = useState<boolean>(false);
@@ -49,13 +50,12 @@ export const App: React.FC = () => {
     api.getMe()
       .then((user) => setCurrentUser(user))
       .catch(() => {
-        // Fallback default dev profile if auth is in dev mode
         setCurrentUser({
           id: 'dev-user-01',
-          full_name: 'Lead SOC Analyst',
-          email: 'analyst@arka-siem.org',
-          role: 'SUPER_ADMIN',
-          tenant_id: 'default-tenant',
+          full_name: 'Wazuh Administrator',
+          email: 'admin@wazuh.local',
+          role: 'ADMIN',
+          tenant_id: 'wazuh',
         });
       });
   }, []);
@@ -79,7 +79,7 @@ export const App: React.FC = () => {
       if (results[4].status === 'fulfilled') setAgents(results[4].value);
       if (results[5].status === 'fulfilled') setRules(results[5].value);
     } catch (e) {
-      console.error('Failed to connect to ARKA backend API cluster:', e);
+      console.error('Failed to connect to backend cluster:', e);
     } finally {
       if (isInitial) setIsLoading(false);
     }
@@ -87,7 +87,7 @@ export const App: React.FC = () => {
 
   useEffect(() => {
     loadData(true);
-    const interval = setInterval(() => loadData(false), 5000); // Silent background poll every 5s
+    const interval = setInterval(() => loadData(false), 5000); // Background poll
     return () => clearInterval(interval);
   }, []);
 
@@ -97,67 +97,84 @@ export const App: React.FC = () => {
     loadData(false);
   };
 
-  const criticalAlertCount = summary ? summary.critical_alerts : alerts.filter(a => a.severity === 'CRITICAL').length;
+  const moduleNamesMap: Record<NavTab, string> = {
+    dashboard: 'Incident Response',
+    explorer: 'Security Events',
+    alerts: 'Alert Triage',
+    incidents: 'Incidents Workspace',
+    agents: 'Endpoint Agents',
+    rules: 'Rules & Decoders',
+    sca: 'Policy Monitoring',
+    vulnerabilities: 'Vulnerability Detection',
+    active_response: 'Active Response',
+    playbooks: 'Threat Hunting',
+    reports: 'Executive Reports',
+    asql: 'Dev Tools',
+  };
 
   return (
-    <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col font-sans selection:bg-cyan-500/30 selection:text-cyan-200">
-      {/* Top Navbar */}
+    <div className="min-h-screen bg-[#f5f7fa] text-slate-800 flex flex-col font-sans">
+      {/* Top Wazuh Header, Sub-navigation & Filters (Matching Image 1) */}
       <Navbar
+        onToggleSidebar={() => setIsSidebarOpen(!isSidebarOpen)}
+        activeTab={activeTab}
+        setActiveTab={setActiveTab}
         timeRange={timeRange}
         setTimeRange={setTimeRange}
-        criticalAlertCount={criticalAlertCount}
-        onOpenNotifications={() => setShowNotificationDrawer(true)}
+        onRefresh={() => loadData(false)}
         onOpenAuth={() => setShowAuthModal(true)}
         currentUser={currentUser}
         onLogout={handleLogout}
         onOpenConfig={() => setShowConfigModal(true)}
+        onExploreAgent={() => setActiveTab('agents')}
+        onGenerateReport={() => setActiveTab('reports')}
+        currentModuleName={moduleNamesMap[activeTab] || 'Incident Response'}
       />
 
-      {/* Main Container */}
-      <div className="flex flex-1">
-        {/* Sidebar */}
-        <Sidebar
-          activeTab={activeTab}
-          setActiveTab={setActiveTab}
-          alertCount={alerts.length}
-          incidentCount={incidents.length}
-          agentCount={agents.length}
-          onOpenConfig={() => setShowConfigModal(true)}
-        />
+      {/* Wazuh Slide-out Navigation Drawer Menu */}
+      <Sidebar
+        isOpen={isSidebarOpen}
+        onClose={() => setIsSidebarOpen(false)}
+        activeTab={activeTab}
+        setActiveTab={setActiveTab}
+        alertCount={alerts.length}
+        incidentCount={incidents.length}
+        agentCount={agents.length}
+        onOpenConfig={() => setShowConfigModal(true)}
+      />
 
-        {/* View Content Area */}
-        <main className="flex-1 overflow-y-auto bg-slate-900/40">
-          {activeTab === 'dashboard' && (
-            <DashboardView
-              summary={summary}
-              isLoading={isLoading}
-              onNavigateTab={setActiveTab}
-              onRefresh={() => loadData(false)}
-            />
-          )}
-          {activeTab === 'explorer' && (
-            <ExplorerView events={events} isLoading={isLoading} onRefresh={() => loadData(false)} />
-          )}
-          {activeTab === 'alerts' && <AlertsView alerts={alerts} onRefresh={() => loadData(false)} />}
-          {activeTab === 'incidents' && <IncidentsView incidents={incidents} onRefresh={() => loadData(false)} />}
-          {activeTab === 'agents' && (
-            <AgentsView
-              agents={agents}
-              onRefresh={() => loadData(false)}
-              onAgentAdded={(newAgent) => setAgents((prev) => [newAgent, ...prev])}
-            />
-          )}
-          {activeTab === 'rules' && <RulesView rules={rules} />}
-          {activeTab === 'sca' && <SCAView />}
-          {activeTab === 'vulnerabilities' && <VulnerabilitiesView />}
-          {activeTab === 'playbooks' && <ThreatHuntingView />}
-          {activeTab === 'reports' && <ReportsView />}
-          {activeTab === 'active_response' && <ActiveResponseView />}
-          {activeTab === 'asql' && <ASQLQueryView />}
-        </main>
-      </div>
+      {/* Main View Area */}
+      <main className="flex-1 overflow-y-auto">
+        {activeTab === 'dashboard' && (
+          <DashboardView
+            summary={summary}
+            isLoading={isLoading}
+            onNavigateTab={setActiveTab}
+            onRefresh={() => loadData(false)}
+          />
+        )}
+        {activeTab === 'explorer' && (
+          <ExplorerView events={events} isLoading={isLoading} onRefresh={() => loadData(false)} />
+        )}
+        {activeTab === 'alerts' && <AlertsView alerts={alerts} onRefresh={() => loadData(false)} />}
+        {activeTab === 'incidents' && <IncidentsView incidents={incidents} onRefresh={() => loadData(false)} />}
+        {activeTab === 'agents' && (
+          <AgentsView
+            agents={agents}
+            onRefresh={() => loadData(false)}
+            onAgentAdded={(newAgent) => setAgents((prev) => [newAgent, ...prev])}
+          />
+        )}
+        {activeTab === 'rules' && <RulesView rules={rules} />}
+        {activeTab === 'sca' && <SCAView />}
+        {activeTab === 'vulnerabilities' && <VulnerabilitiesView />}
+        {activeTab === 'playbooks' && <ThreatHuntingView />}
+        {activeTab === 'reports' && <ReportsView />}
+        {activeTab === 'active_response' && <ActiveResponseView />}
+        {activeTab === 'asql' && <ASQLQueryView />}
+      </main>
 
-      {/* Modals & Slide-out Drawers */}
+      {/* Modals & Dialogs */}
       <AuthModal
         isOpen={showAuthModal}
         onClose={() => setShowAuthModal(false)}

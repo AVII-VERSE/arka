@@ -1,19 +1,18 @@
 import React from 'react';
 import {
-  LayoutDashboard,
+  ShieldAlert,
   Search,
-  AlertTriangle,
-  FileSpreadsheet,
   Server,
-  ShieldCheck,
-  Settings,
-  Cpu,
+  Lock,
+  Bug,
   Target,
   FileText,
-  Bug,
-  ShieldAlert,
   Code2,
-  Lock,
+  Settings,
+  ShieldCheck,
+  X,
+  FileSpreadsheet,
+  AlertTriangle,
 } from 'lucide-react';
 
 export type NavTab =
@@ -31,6 +30,8 @@ export type NavTab =
   | 'asql';
 
 interface SidebarProps {
+  isOpen: boolean;
+  onClose: () => void;
   activeTab: NavTab;
   setActiveTab: (tab: NavTab) => void;
   alertCount: number;
@@ -40,6 +41,8 @@ interface SidebarProps {
 }
 
 export const Sidebar: React.FC<SidebarProps> = ({
+  isOpen,
+  onClose,
   activeTab,
   setActiveTab,
   alertCount,
@@ -47,111 +50,125 @@ export const Sidebar: React.FC<SidebarProps> = ({
   agentCount,
   onOpenConfig,
 }) => {
-  const navSections = [
+  if (!isOpen) return null;
+
+  const menuSections = [
     {
-      title: 'SOC Operations',
+      title: 'Endpoint Security',
       items: [
-        { id: 'dashboard' as NavTab, label: 'Security Dashboard', icon: LayoutDashboard, badge: null },
-        { id: 'playbooks' as NavTab, label: 'Threat Hunting', icon: Target, badge: 'MITRE' },
-        { id: 'reports' as NavTab, label: 'Executive Reports', icon: FileText, badge: 'CISO' },
+        { id: 'dashboard' as NavTab, label: 'Incident Response / Overview', icon: ShieldAlert, badge: null },
+        { id: 'explorer' as NavTab, label: 'Security Events (Logs)', icon: Search, badge: null },
+        { id: 'vulnerabilities' as NavTab, label: 'Vulnerabilities', icon: Bug, badge: 'CVE' },
+        { id: 'sca' as NavTab, label: 'Policy Monitoring (SCA)', icon: Lock, badge: 'CIS' },
       ],
     },
     {
-      title: 'Detection & Triage',
+      title: 'Threat Intelligence',
       items: [
+        { id: 'playbooks' as NavTab, label: 'Threat Hunting (MITRE)', icon: Target, badge: null },
+        { id: 'rules' as NavTab, label: 'Rules & Decoders', icon: ShieldCheck, badge: null },
         { id: 'alerts' as NavTab, label: 'Alert Triage Center', icon: AlertTriangle, badge: alertCount },
         { id: 'incidents' as NavTab, label: 'Incident Workspace', icon: FileSpreadsheet, badge: incidentCount },
-        { id: 'explorer' as NavTab, label: 'Event Explorer (KQL)', icon: Search, badge: null },
-        { id: 'asql' as NavTab, label: 'ASQL Query Console', icon: Code2, badge: 'SQL' },
-        { id: 'rules' as NavTab, label: 'Detection Rules & MITRE', icon: ShieldCheck, badge: null },
       ],
     },
     {
-      title: 'Audit & Compliance',
+      title: 'Management',
       items: [
-        { id: 'sca' as NavTab, label: 'CIS Hardening (SCA)', icon: Lock, badge: 'CIS' },
-        { id: 'vulnerabilities' as NavTab, label: 'Vulnerability Detector', icon: Bug, badge: 'CVE' },
-      ],
-    },
-    {
-      title: 'Fleet & Response',
-      items: [
-        { id: 'agents' as NavTab, label: 'Endpoint Agent Fleet', icon: Server, badge: agentCount },
+        { id: 'agents' as NavTab, label: 'Agents Fleet', icon: Server, badge: agentCount },
         { id: 'active_response' as NavTab, label: 'Active Response (EDR)', icon: ShieldAlert, badge: 'EDR' },
+        { id: 'reports' as NavTab, label: 'Executive Reports', icon: FileText, badge: null },
+        { id: 'asql' as NavTab, label: 'Dev Tools (ASQL Query)', icon: Code2, badge: 'SQL' },
       ],
     },
   ];
 
   return (
-    <aside className="w-64 bg-slate-950/95 border-r border-slate-800/80 flex flex-col justify-between p-4 sticky top-16 h-[calc(100vh-4rem)] font-mono overflow-y-auto">
-      <div className="space-y-5">
-        {navSections.map((section, idx) => (
-          <div key={idx}>
-            <div className="px-3 py-1 text-[9px] text-slate-500 uppercase tracking-widest font-bold mb-1.5">
-              {section.title}
+    <div className="fixed inset-0 z-50 overflow-hidden bg-slate-900/40 backdrop-blur-xs select-none font-sans">
+      <div className="absolute inset-y-0 left-0 max-w-full flex">
+        <aside className="w-72 bg-white border-r border-slate-200 shadow-2xl flex flex-col justify-between">
+          {/* Drawer Header */}
+          <div className="h-12 px-4 border-b border-slate-200 flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <span className="font-extrabold text-lg text-slate-900">
+                W<span className="text-[#0060df]">.</span>
+              </span>
+              <span className="text-xs font-bold text-slate-700 uppercase tracking-wider">
+                ARKA Navigation
+              </span>
             </div>
-            <div className="space-y-0.5">
-              {section.items.map((item) => {
-                const Icon = item.icon;
-                const isActive = activeTab === item.id;
-                return (
-                  <button
-                    key={item.id}
-                    onClick={() => setActiveTab(item.id)}
-                    className={`w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs transition-all ${
-                      isActive
-                        ? 'bg-gradient-to-r from-cyan-500/20 to-cyan-500/5 text-cyan-300 font-bold border border-cyan-500/30 shadow-lg shadow-cyan-500/10'
-                        : 'text-slate-400 hover:bg-slate-900/80 hover:text-slate-200 border border-transparent'
-                    }`}
-                  >
-                    <div className="flex items-center gap-2.5 truncate">
-                      <Icon className={`w-4 h-4 flex-shrink-0 ${isActive ? 'text-cyan-400' : 'text-slate-500'}`} />
-                      <span className="truncate">{item.label}</span>
-                    </div>
-                    {item.badge !== null && (
-                      <span
-                        className={`px-1.5 py-0.5 rounded text-[9px] font-bold flex-shrink-0 ${
+            <button
+              onClick={onClose}
+              className="p-1 rounded text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-colors"
+            >
+              <X className="w-4 h-4" />
+            </button>
+          </div>
+
+          {/* Nav Menu Content */}
+          <div className="flex-1 overflow-y-auto p-3 space-y-4">
+            {menuSections.map((sec, idx) => (
+              <div key={idx}>
+                <div className="px-3 py-1 text-[10px] font-bold text-slate-400 uppercase tracking-wider">
+                  {sec.title}
+                </div>
+                <div className="space-y-0.5 mt-1">
+                  {sec.items.map((item) => {
+                    const Icon = item.icon;
+                    const isActive = activeTab === item.id;
+                    return (
+                      <button
+                        key={item.id}
+                        onClick={() => {
+                          setActiveTab(item.id);
+                          onClose();
+                        }}
+                        className={`w-full flex items-center justify-between px-3 py-2 rounded text-xs transition-all ${
                           isActive
-                            ? 'bg-cyan-500/30 text-cyan-200'
-                            : 'bg-slate-900 text-slate-400 border border-slate-800'
+                            ? 'bg-blue-50 text-[#0060df] font-bold border-l-4 border-[#0060df]'
+                            : 'text-slate-700 hover:bg-slate-50 hover:text-slate-900 font-medium'
                         }`}
                       >
-                        {item.badge}
-                      </span>
-                    )}
-                  </button>
-                );
-              })}
-            </div>
+                        <div className="flex items-center gap-2.5 truncate">
+                          <Icon className={`w-4 h-4 ${isActive ? 'text-[#0060df]' : 'text-slate-500'}`} />
+                          <span className="truncate">{item.label}</span>
+                        </div>
+                        {item.badge !== null && (
+                          <span
+                            className={`px-1.5 py-0.2 rounded text-[10px] font-bold ${
+                              isActive
+                                ? 'bg-blue-200 text-[#0060df]'
+                                : 'bg-slate-100 text-slate-600'
+                            }`}
+                          >
+                            {item.badge}
+                          </span>
+                        )}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            ))}
           </div>
-        ))}
-      </div>
 
-      {/* System Health Card & Settings */}
-      <div className="space-y-2 pt-4 border-t border-slate-800/80 mt-4">
-        <div className="p-2.5 bg-slate-900/80 border border-slate-800 rounded-xl space-y-1.5 text-[10px]">
-          <div className="flex items-center justify-between">
-            <span className="text-slate-400 flex items-center gap-1.5">
-              <Cpu className="w-3.5 h-3.5 text-cyan-400" /> Pipeline Engine
-            </span>
-            <span className="text-emerald-400 font-bold">HEALTHY</span>
+          {/* Drawer Footer */}
+          <div className="p-3 border-t border-slate-200 bg-slate-50 space-y-2">
+            <button
+              onClick={() => {
+                onClose();
+                if (onOpenConfig) onOpenConfig();
+              }}
+              className="w-full flex items-center justify-between px-3 py-2 rounded bg-white border border-slate-200 hover:border-slate-300 text-xs text-slate-700 font-medium transition-all"
+            >
+              <div className="flex items-center gap-2">
+                <Settings className="w-4 h-4 text-slate-500" />
+                <span>Cluster Settings</span>
+              </div>
+              <span className="text-[10px] text-slate-400 font-mono">v4.8</span>
+            </button>
           </div>
-          <div className="w-full bg-slate-950 rounded-full h-1.5 overflow-hidden">
-            <div className="bg-gradient-to-r from-cyan-500 to-emerald-400 h-full w-[92%] rounded-full animate-pulse" />
-          </div>
-        </div>
-
-        <button
-          onClick={onOpenConfig}
-          className="w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-medium text-slate-300 hover:bg-slate-900 hover:text-cyan-300 border border-slate-800/80 transition-all group"
-        >
-          <div className="flex items-center gap-2.5">
-            <Settings className="w-4 h-4 text-slate-400 group-hover:text-cyan-400 transition-colors" />
-            <span>SIEM Configuration</span>
-          </div>
-          <span className="text-[10px] text-cyan-400 font-mono">v0.1.0</span>
-        </button>
+        </aside>
       </div>
-    </aside>
+    </div>
   );
 };
