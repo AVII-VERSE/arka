@@ -1,6 +1,6 @@
 # Issue #15: Implement Threat Hunting Playbooks Engine
 
-- **Status**: `[IN_PROGRESS]`
+- **Status**: `[RESOLVED]`
 - **Severity**: `HIGH`
 - **Component**: `backend/app/services/threat_hunting_service.py`, `backend/app/api/v1/endpoints/threat_hunting.py`
 - **Reporter**: Lead Cybersecurity Architect
