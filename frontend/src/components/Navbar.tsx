@@ -81,10 +81,13 @@ export const Navbar: React.FC<NavbarProps> = ({
             <Menu className="w-5 h-5" />
           </button>
 
-          {/* Wazuh Style Brand Logo: W. (or ARKA) */}
-          <div className="flex items-center gap-1.5 cursor-pointer" onClick={() => setActiveTab('dashboard')}>
-            <span className="font-extrabold text-xl tracking-tight text-slate-900 font-sans">
-              W<span className="text-[#0060df]">.</span>
+          {/* ARKA Brand Logo with Wazuh-style clean typography */}
+          <div className="flex items-center gap-2 cursor-pointer" onClick={() => setActiveTab('dashboard')}>
+            <div className="w-6 h-6 rounded bg-[#0060df] flex items-center justify-center text-white font-black text-xs shadow-xs font-mono">
+              A
+            </div>
+            <span className="font-extrabold text-base tracking-wider text-slate-900 font-mono">
+              ARKA<span className="text-[#0060df]">.</span>
             </span>
           </div>
 
@@ -115,7 +118,7 @@ export const Navbar: React.FC<NavbarProps> = ({
                 <div className="w-5 h-5 rounded-full bg-slate-200 flex items-center justify-center text-slate-600">
                   <User className="w-3.5 h-3.5" />
                 </div>
-                <span className="text-xs font-semibold">{currentUser.tenant_id || 'wazuh'}</span>
+                <span className="text-xs font-semibold">{currentUser.tenant_id || 'arka-soc'}</span>
                 <ChevronDown className="w-3 h-3 text-slate-400" />
               </button>
             ) : (
