@@ -111,7 +111,7 @@ export const IncidentsView: React.FC<IncidentsViewProps> = ({ incidents, onRefre
               <div>
                 <p className="text-[10px] text-slate-500 uppercase mb-2">Analyst Investigation Notes</p>
                 <div className="space-y-2 max-h-40 overflow-y-auto pr-1">
-                  {selectedIncident.notes.map((n, idx) => (
+                  {(selectedIncident.notes || []).map((n, idx) => (
                     <div key={idx} className="p-2 bg-slate-900 border border-slate-800 rounded text-[11px]">
                       <div className="flex justify-between text-[10px] text-cyan-400">
                         <span>{n.author}</span>
@@ -119,7 +119,7 @@ export const IncidentsView: React.FC<IncidentsViewProps> = ({ incidents, onRefre
                       <p className="text-slate-300 mt-1">{n.text}</p>
                     </div>
                   ))}
-                  {selectedIncident.notes.length === 0 && (
+                  {(!selectedIncident.notes || selectedIncident.notes.length === 0) && (
                     <p className="text-[11px] text-slate-500 italic">No analyst notes recorded yet.</p>
                   )}
                 </div>

@@ -7,8 +7,25 @@ import { AlertsView } from './components/AlertsView';
 import { IncidentsView } from './components/IncidentsView';
 import { AgentsView } from './components/AgentsView';
 import { RulesView } from './components/RulesView';
+import { SCAView } from './components/SCAView';
+import { VulnerabilitiesView } from './components/VulnerabilitiesView';
+import { ThreatHuntingView } from './components/ThreatHuntingView';
+import { ReportsView } from './components/ReportsView';
+import { ActiveResponseView } from './components/ActiveResponseView';
+import { ASQLQueryView } from './components/ASQLQueryView';
+import { AuthModal } from './components/AuthModal';
+import { NotificationDrawer } from './components/NotificationDrawer';
+import { SiemConfigModal } from './components/SiemConfigModal';
 import { api } from './api/client';
-import { DashboardSummary, SecurityEvent, Alert, Incident, Agent, DetectionRule } from './types';
+import {
+  DashboardSummary,
+  SecurityEvent,
+  Alert,
+  Incident,
+  Agent,
+  DetectionRule,
+  UserProfile,
+} from './types';
 
 export const App: React.FC = () => {
   const [activeTab, setActiveTab] = useState<NavTab>('dashboard');
@@ -20,6 +37,28 @@ export const App: React.FC = () => {
   const [rules, setRules] = useState<DetectionRule[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [timeRange, setTimeRange] = useState<string>('1h');
+
+  // Modals & Drawers state
+  const [showAuthModal, setShowAuthModal] = useState<boolean>(false);
+  const [showNotificationDrawer, setShowNotificationDrawer] = useState<boolean>(false);
+  const [showConfigModal, setShowConfigModal] = useState<boolean>(false);
+  const [currentUser, setCurrentUser] = useState<UserProfile | null>(null);
+
+  // Initialize Auth state
+  useEffect(() => {
+    api.getMe()
+      .then((user) => setCurrentUser(user))
+      .catch(() => {
+        // Fallback default dev profile if auth is in dev mode
+        setCurrentUser({
+          id: 'dev-user-01',
+          full_name: 'Lead SOC Analyst',
+          email: 'analyst@arka-siem.org',
+          role: 'SUPER_ADMIN',
+          tenant_id: 'default-tenant',
+        });
+      });
+  }, []);
 
   const loadData = async (isInitial = false) => {
     if (isInitial) setIsLoading(true);
@@ -52,36 +91,104 @@ export const App: React.FC = () => {
     return () => clearInterval(interval);
   }, []);
 
-  const criticalAlertCount = summary ? summary.critical_alerts : 0;
+  const handleLogout = () => {
+    api.logout();
+    setCurrentUser(null);
+    loadData(false);
+  };
+
+  const criticalAlertCount = summary ? summary.critical_alerts : alerts.filter(a => a.severity === 'CRITICAL').length;
 
   return (
-    <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col font-sans">
+    <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col font-sans selection:bg-cyan-500/30 selection:text-cyan-200">
+      {/* Top Navbar */}
       <Navbar
         timeRange={timeRange}
         setTimeRange={setTimeRange}
         criticalAlertCount={criticalAlertCount}
+        onOpenNotifications={() => setShowNotificationDrawer(true)}
+        onOpenAuth={() => setShowAuthModal(true)}
+        currentUser={currentUser}
+        onLogout={handleLogout}
+        onOpenConfig={() => setShowConfigModal(true)}
       />
+
+      {/* Main Container */}
       <div className="flex flex-1">
+        {/* Sidebar */}
         <Sidebar
           activeTab={activeTab}
           setActiveTab={setActiveTab}
           alertCount={alerts.length}
           incidentCount={incidents.length}
           agentCount={agents.length}
+          onOpenConfig={() => setShowConfigModal(true)}
         />
+
+        {/* View Content Area */}
         <main className="flex-1 overflow-y-auto bg-slate-900/40">
           {activeTab === 'dashboard' && (
-            <DashboardView summary={summary} isLoading={isLoading} onNavigateTab={setActiveTab} />
+            <DashboardView
+              summary={summary}
+              isLoading={isLoading}
+              onNavigateTab={setActiveTab}
+              onRefresh={() => loadData(false)}
+            />
           )}
           {activeTab === 'explorer' && (
-            <ExplorerView events={events} isLoading={isLoading} onRefresh={loadData} />
+            <ExplorerView events={events} isLoading={isLoading} onRefresh={() => loadData(false)} />
           )}
-          {activeTab === 'alerts' && <AlertsView alerts={alerts} onRefresh={loadData} />}
-          {activeTab === 'incidents' && <IncidentsView incidents={incidents} onRefresh={loadData} />}
-          {activeTab === 'agents' && <AgentsView agents={agents} />}
+          {activeTab === 'alerts' && <AlertsView alerts={alerts} onRefresh={() => loadData(false)} />}
+          {activeTab === 'incidents' && <IncidentsView incidents={incidents} onRefresh={() => loadData(false)} />}
+          {activeTab === 'agents' && (
+            <AgentsView
+              agents={agents}
+              onRefresh={() => loadData(false)}
+              onAgentAdded={(newAgent) => setAgents((prev) => [newAgent, ...prev])}
+            />
+          )}
           {activeTab === 'rules' && <RulesView rules={rules} />}
+          {activeTab === 'sca' && <SCAView />}
+          {activeTab === 'vulnerabilities' && <VulnerabilitiesView />}
+          {activeTab === 'playbooks' && <ThreatHuntingView />}
+          {activeTab === 'reports' && <ReportsView />}
+          {activeTab === 'active_response' && <ActiveResponseView />}
+          {activeTab === 'asql' && <ASQLQueryView />}
         </main>
       </div>
+
+      {/* Modals & Slide-out Drawers */}
+      <AuthModal
+        isOpen={showAuthModal}
+        onClose={() => setShowAuthModal(false)}
+        onAuthSuccess={(user) => {
+          setCurrentUser(user);
+          loadData(true);
+        }}
+      />
+
+      <NotificationDrawer
+        isOpen={showNotificationDrawer}
+        onClose={() => setShowNotificationDrawer(false)}
+        alerts={alerts}
+        onInspectAlert={() => {
+          setActiveTab('alerts');
+        }}
+        onAcknowledgeAlert={async (alertId) => {
+          try {
+            await api.updateAlertStatus(alertId, 'ACKNOWLEDGED');
+            loadData(false);
+          } catch (e) {
+            console.error(e);
+          }
+        }}
+      />
+
+      <SiemConfigModal
+        isOpen={showConfigModal}
+        onClose={() => setShowConfigModal(false)}
+        onSimulateSuccess={() => loadData(false)}
+      />
     </div>
   );
 };
