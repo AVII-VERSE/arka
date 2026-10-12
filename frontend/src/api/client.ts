@@ -87,8 +87,15 @@ export const api = {
     return res.data;
   },
 
+  ingestEvents: async (events: any[] | Record<string, any>): Promise<any> => {
+    const payload = Array.isArray(events) ? { events } : (events.events ? events : { events: [events] });
+    const res = await client.post('/events/ingest', payload);
+    return res.data;
+  },
+
   ingestEvent: async (eventData: Record<string, any>): Promise<any> => {
-    const res = await client.post('/events/ingest', eventData);
+    const payload = eventData.events ? eventData : { events: [eventData] };
+    const res = await client.post('/events/ingest', payload);
     return res.data;
   },
 

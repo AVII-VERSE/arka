@@ -16,6 +16,7 @@ import { ASQLQueryView } from './components/ASQLQueryView';
 import { AuthModal } from './components/AuthModal';
 import { NotificationDrawer } from './components/NotificationDrawer';
 import { SiemConfigModal } from './components/SiemConfigModal';
+import { LoginPage } from './components/LoginPage';
 import { api } from './api/client';
 import {
   DashboardSummary,
@@ -26,6 +27,7 @@ import {
   DetectionRule,
   UserProfile,
 } from './types';
+import { Shield } from 'lucide-react';
 
 export const App: React.FC = () => {
   const [activeTab, setActiveTab] = useState<NavTab>('dashboard');
@@ -37,6 +39,7 @@ export const App: React.FC = () => {
   const [agents, setAgents] = useState<Agent[]>([]);
   const [rules, setRules] = useState<DetectionRule[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(true);
+  const [authChecking, setAuthChecking] = useState<boolean>(true);
   const [timeRange, setTimeRange] = useState<string>('24h');
 
   // Modals & Drawers state
@@ -44,21 +47,6 @@ export const App: React.FC = () => {
   const [showNotificationDrawer, setShowNotificationDrawer] = useState<boolean>(false);
   const [showConfigModal, setShowConfigModal] = useState<boolean>(false);
   const [currentUser, setCurrentUser] = useState<UserProfile | null>(null);
-
-  // Initialize Auth state
-  useEffect(() => {
-    api.getMe()
-      .then((user) => setCurrentUser(user))
-      .catch(() => {
-        setCurrentUser({
-          id: 'dev-user-01',
-          full_name: 'Lead SOC Analyst',
-          email: 'analyst@arka-siem.org',
-          role: 'ADMIN',
-          tenant_id: 'arka-soc',
-        });
-      });
-  }, []);
 
   const loadData = async (isInitial = false) => {
     if (isInitial) setIsLoading(true);
@@ -85,17 +73,67 @@ export const App: React.FC = () => {
     }
   };
 
+  // Initialize Auth state
   useEffect(() => {
-    loadData(true);
-    const interval = setInterval(() => loadData(false), 5000); // Background poll
-    return () => clearInterval(interval);
+    const token = localStorage.getItem('arka_token');
+    if (token) {
+      api.getMe()
+        .then((user) => {
+          setCurrentUser(user);
+          loadData(true);
+        })
+        .catch(() => {
+          api.logout();
+          setCurrentUser(null);
+        })
+        .finally(() => {
+          setAuthChecking(false);
+        });
+    } else {
+      setCurrentUser(null);
+      setAuthChecking(false);
+    }
   }, []);
+
+  // Poll real data when user is authenticated
+  useEffect(() => {
+    if (!currentUser) return;
+    loadData(false);
+    const interval = setInterval(() => loadData(false), 5000);
+    return () => clearInterval(interval);
+  }, [currentUser]);
 
   const handleLogout = () => {
     api.logout();
     setCurrentUser(null);
-    loadData(false);
+    setSummary(undefined);
+    setEvents([]);
+    setAlerts([]);
+    setIncidents([]);
+    setAgents([]);
+    setRules([]);
   };
+
+  const handleLoginSuccess = (user: UserProfile) => {
+    setCurrentUser(user);
+    loadData(true);
+  };
+
+  if (authChecking) {
+    return (
+      <div className="min-h-screen bg-[#0c1427] flex flex-col items-center justify-center text-white">
+        <div className="w-12 h-12 rounded-xl bg-[#0060df] flex items-center justify-center animate-pulse shadow-xl shadow-blue-500/30 mb-4">
+          <Shield className="w-7 h-7 text-white" />
+        </div>
+        <p className="text-sm font-semibold tracking-wider text-slate-300">INITIALIZING ARKA SECURITY ENGINE...</p>
+      </div>
+    );
+  }
+
+  // If not logged in, render the dedicated LoginPage
+  if (!currentUser) {
+    return <LoginPage onLoginSuccess={handleLoginSuccess} />;
+  }
 
   const moduleNamesMap: Record<NavTab, string> = {
     dashboard: 'Incident Response',
@@ -148,6 +186,9 @@ export const App: React.FC = () => {
         {activeTab === 'dashboard' && (
           <DashboardView
             summary={summary}
+            events={events}
+            alerts={alerts}
+            agents={agents}
             isLoading={isLoading}
             onNavigateTab={setActiveTab}
             onRefresh={() => loadData(false)}

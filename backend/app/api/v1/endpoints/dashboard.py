@@ -32,7 +32,10 @@ async def get_dashboard_summary(
     tenant_id = current_user.tenant_id
 
     # Filter transient events by tenant
-    tenant_events = [e for e in _TRANSIENT_EVENT_STORE if e.tenant_id == tenant_id]
+    tenant_events = [
+        e for e in _TRANSIENT_EVENT_STORE
+        if e.tenant_id == tenant_id or e.tenant_id in ("default-tenant", "default") or current_user.role == RoleEnum.SUPER_ADMIN
+    ]
     total_events = len(tenant_events)
 
     # Auth failures in event store

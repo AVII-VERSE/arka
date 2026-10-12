@@ -9,7 +9,7 @@ from fastapi import APIRouter, Depends, Query, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.deps import get_current_user, get_db
-from app.models.models import Alert, User
+from app.models.models import Alert, RoleEnum, User
 from app.schemas.schemas import IngestEventsRequest, IngestEventsResponse, NormalizedEvent
 from app.services.detection_engine import DetectionEngine
 from app.services.kafka_pipeline import kafka_consumer, kafka_producer
@@ -108,7 +108,10 @@ async def list_events(
             return normalized_list
 
     # Fallback filter from transient event store
-    filtered = [e for e in _TRANSIENT_EVENT_STORE if e.tenant_id == tenant_id]
+    filtered = [
+        e for e in _TRANSIENT_EVENT_STORE
+        if e.tenant_id == tenant_id or e.tenant_id in ("default-tenant", "default") or current_user.role == RoleEnum.SUPER_ADMIN
+    ]
 
     if severity:
         filtered = [e for e in filtered if e.severity == severity.upper()]

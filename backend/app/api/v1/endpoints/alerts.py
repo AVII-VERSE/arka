@@ -9,6 +9,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.deps import get_current_user, get_db, verify_tenant_access
+from app.api.v1.endpoints.events import _TRANSIENT_ALERT_STORE
 from app.models.models import Alert, AuditLog, User
 from app.schemas.schemas import AlertRead, AlertUpdateStatus
 
@@ -18,14 +19,13 @@ router = APIRouter()
 @router.get("", response_model=list[AlertRead])
 async def list_alerts(
     current_user: Annotated[User, Depends(get_current_user)],
-    db: Annotated[AsyncSession | None, Depends(get_db)],
+    db: Annotated[AsyncSession, Depends(get_db)],
     severity: str | None = Query(None),
     status_filter: str | None = Query(None, alias="status"),
     limit: int = Query(50, ge=1, le=200),
 ) -> list[Alert]:
     """Lists alerts scoped to the current user's tenant."""
-    if db is None:
-        return []
+    alerts = []
     try:
         query = select(Alert).where(Alert.tenant_id == current_user.tenant_id)
         if severity:
@@ -34,9 +34,18 @@ async def list_alerts(
             query = query.where(Alert.status == status_filter.upper())
         query = query.order_by(Alert.created_at.desc()).limit(limit)
         result = await db.execute(query)
-        return list(result.scalars().all())
+        alerts = list(result.scalars().all())
     except Exception:
-        return []
+        alerts = []
+
+    if not alerts and _TRANSIENT_ALERT_STORE:
+        alerts = [a for a in _TRANSIENT_ALERT_STORE if a.tenant_id == current_user.tenant_id]
+        if severity:
+            alerts = [a for a in alerts if a.severity.value == severity.upper()]
+        if status_filter:
+            alerts = [a for a in alerts if a.status.value == status_filter.upper()]
+
+    return alerts[:limit]
 
 
 @router.get("/{alert_id}", response_model=AlertRead)
@@ -49,6 +58,10 @@ async def get_alert(
     result = await db.execute(select(Alert).where(Alert.id == alert_id))
     alert = result.scalar_one_or_none()
     if not alert:
+        # Check transient store
+        for ta in _TRANSIENT_ALERT_STORE:
+            if ta.id == alert_id:
+                return ta
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=f"Alert '{alert_id}' not found.",
@@ -68,6 +81,11 @@ async def update_alert_status(
     result = await db.execute(select(Alert).where(Alert.id == alert_id))
     alert = result.scalar_one_or_none()
     if not alert:
+        # Check transient
+        for ta in _TRANSIENT_ALERT_STORE:
+            if ta.id == alert_id:
+                ta.status = payload.status
+                return ta
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=f"Alert '{alert_id}' not found.",
@@ -90,6 +108,6 @@ async def update_alert_status(
         },
     )
     db.add(audit_entry)
-    await db.flush()
+    await db.commit()
     await db.refresh(alert)
     return alert

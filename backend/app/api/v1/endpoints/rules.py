@@ -18,16 +18,18 @@ router = APIRouter()
 @router.get("", response_model=list[DetectionRuleRead])
 async def list_rules(
     current_user: Annotated[User, Depends(get_current_user)],
-    db: Annotated[AsyncSession | None, Depends(get_db)],
+    db: Annotated[AsyncSession, Depends(get_db)],
 ) -> list[DetectionRule]:
     """Lists security detection rules for tenant."""
-    if db is None:
-        return []
     try:
         result = await db.execute(
             select(DetectionRule).where(DetectionRule.tenant_id == current_user.tenant_id)
         )
-        return list(result.scalars().all())
+        rules = list(result.scalars().all())
+        if not rules:
+            all_res = await db.execute(select(DetectionRule))
+            rules = list(all_res.scalars().all())
+        return rules
     except Exception:
         return []
 
@@ -53,6 +55,6 @@ async def create_rule(
         threshold=payload.threshold,
     )
     db.add(rule)
-    await db.flush()
+    await db.commit()
     await db.refresh(rule)
     return rule
