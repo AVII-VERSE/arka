@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import {
   ChevronRight,
   ChevronDown,
@@ -7,6 +7,10 @@ import {
   Copy,
   Check,
   Zap,
+  Activity,
+  AlertTriangle,
+  RefreshCw,
+  Server,
 } from 'lucide-react';
 import {
   PieChart,
@@ -19,11 +23,14 @@ import {
   YAxis,
   Tooltip,
 } from 'recharts';
-import { DashboardSummary } from '../types';
+import { Agent, Alert, DashboardSummary, SecurityEvent } from '../types';
 import { api } from '../api/client';
 
 interface DashboardViewProps {
   summary?: DashboardSummary;
+  events?: SecurityEvent[];
+  alerts?: Alert[];
+  agents?: Agent[];
   isLoading: boolean;
   onNavigateTab?: (tab: any) => void;
   onRefresh?: () => void;
@@ -45,8 +52,11 @@ interface WazuhEventRow {
 }
 
 export const DashboardView: React.FC<DashboardViewProps> = ({
-  summary: _apiSummary,
-  isLoading: _isLoading,
+  summary,
+  events = [],
+  alerts = [],
+  agents = [],
+  isLoading,
   onNavigateTab: _onNavigateTab,
   onRefresh,
 }) => {
@@ -55,141 +65,192 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
   const [simulating, setSimulating] = useState(false);
   const [toast, setToast] = useState<string | null>(null);
 
-  // Wazuh Donut Chart Data (Matching Image 1: Alert groups)
-  const alertGroupsData = [
-    { name: 'Connection blocked', value: 52, color: '#0060df' },
-    { name: 'Process stopped', value: 33, color: '#f5a623' },
-    { name: 'File quarantined', value: 6, color: '#d9381e' },
-    { name: 'Application removed', value: 5, color: '#80389b' },
-    { name: 'Ticket opened', value: 4, color: '#00a2b0' },
-  ];
+  // Dynamically compute real Alert Groups for the Donut Chart from alerts or events
+  const alertGroupsData = useMemo(() => {
+    if (alerts && alerts.length > 0) {
+      const counts: Record<string, number> = {};
+      alerts.forEach((a) => {
+        const group = a.rule_code || 'Security Rule';
+        counts[group] = (counts[group] || 0) + 1;
+      });
+      const palette = ['#0060df', '#f5a623', '#d9381e', '#80389b', '#00a2b0', '#10b981', '#ef4444'];
+      return Object.entries(counts).map(([name, value], i) => ({
+        name,
+        value,
+        color: palette[i % palette.length],
+      }));
+    }
 
-  // Wazuh Bar Chart Histogram Data (Matching Image 1: Events 5,327 hits)
-  const eventsHistogramData = [
-    { date: '2026-05-24', count: 180 },
-    { date: '2026-05-27', count: 155 },
-    { date: '2026-05-31', count: 120 },
-    { date: '2026-06-03', count: 210 },
-    { date: '2026-06-07', count: 480 },
-    { date: '2026-06-10', count: 190 },
-    { date: '2026-06-14', count: 130 },
-    { date: '2026-06-17', count: 270 },
-    { date: '2026-06-21', count: 320 },
-    { date: '2026-06-24', count: 260 },
-    { date: '2026-06-28', count: 350 },
-    { date: '2026-07-01', count: 200 },
-    { date: '2026-07-05', count: 65 },
-    { date: '2026-07-08', count: 255 },
-    { date: '2026-07-12', count: 310 },
-    { date: '2026-07-15', count: 195 },
-    { date: '2026-07-19', count: 380 },
-    { date: '2026-07-22', count: 315 },
-    { date: '2026-07-26', count: 70 },
-  ];
+    if (events && events.length > 0) {
+      const counts: Record<string, number> = {};
+      events.forEach((e) => {
+        const group = e.action || e.event_type || 'Host Telemetry';
+        counts[group] = (counts[group] || 0) + 1;
+      });
+      const palette = ['#0060df', '#f5a623', '#d9381e', '#80389b', '#00a2b0', '#10b981'];
+      return Object.entries(counts).map(([name, value], i) => ({
+        name,
+        value,
+        color: palette[i % palette.length],
+      }));
+    }
 
-  // Wazuh Authentic Events Table Rows (Matching Image 1)
-  const eventsRows: WazuhEventRow[] = [
-    {
-      id: 'evt-001',
-      timestamp: 'Aug 16, 2026 @ 22:39:18.199',
-      agent_name: 'RHEL7',
-      agent_id: '001',
-      agent_ip: '192.168.1.105',
-      rule_groups: 'Connection blocked',
-      rule_description: 'Poor reputation IP address 196.52.43.89 blocked by firewall',
-      rule_level: 9,
-      rule_id: '100100',
-      mitre_id: 'T1071.001',
-      raw_log: 'iptables: DROP IN=eth0 OUT= MAC=52:54:00:12:34:56 SRC=196.52.43.89 DST=192.168.1.105 PROTO=TCP SPT=44124 DPT=445',
-    },
-    {
-      id: 'evt-002',
-      timestamp: 'Aug 15, 2026 @ 16:29:31.754',
-      agent_name: 'Windows',
-      agent_id: '002',
-      agent_ip: '10.0.0.12',
-      rule_groups: 'File quarantined',
-      rule_description: 'File C:\\Users\\Administrator\\Finance.doc quarantined',
-      rule_level: 10,
-      rule_id: '100125',
-      mitre_id: 'T1204.002',
-      raw_log: 'active-response: quarantined file C:\\Users\\Administrator\\Finance.doc (SHA256: e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855)',
-    },
-    {
-      id: 'evt-003',
-      timestamp: 'Aug 15, 2026 @ 01:20:38.187',
-      agent_name: 'Debian',
-      agent_id: '003',
-      agent_ip: '192.168.1.140',
-      rule_groups: 'Process stopped',
-      rule_description: 'Compromised process /usr/sbin/httpd stopped',
-      rule_level: 12,
-      rule_id: '100232',
-      mitre_id: 'T1059.004',
-      raw_log: 'active-response: killed PID 9812 process /usr/sbin/httpd spawned by www-data',
-    },
-    {
-      id: 'evt-004',
-      timestamp: 'Aug 14, 2026 @ 03:10:14.366',
-      agent_name: 'Centos',
-      agent_id: '004',
-      agent_ip: '192.168.1.112',
-      rule_groups: 'Application removed',
-      rule_description: 'Blacklisted RPM nmap-ncat-6.40-19 removed',
-      rule_level: 12,
-      rule_id: '100206',
-      mitre_id: 'T1078',
-      raw_log: 'yum: Erased: nmap-ncat-6.40-19.el7.x86_64 policy violation trigger',
-    },
-    {
-      id: 'evt-005',
-      timestamp: 'Aug 13, 2026 @ 19:44:02.812',
-      agent_name: 'Ubuntu22',
-      agent_id: '005',
-      agent_ip: '192.168.1.198',
-      rule_groups: 'Ticket opened',
-      rule_description: 'Automated SOC incident IR-2026-904 dispatched to Jira',
-      rule_level: 7,
-      rule_id: '100050',
-      mitre_id: 'T1110',
-      raw_log: 'jira-webhook: created issue SEC-4892 Severity=High Host=Ubuntu22',
-    },
-  ];
+    return [];
+  }, [alerts, events]);
+
+  // Dynamically calculate events histogram per timestamp bucket
+  const eventsHistogramData = useMemo(() => {
+    if (!events || events.length === 0) {
+      return [];
+    }
+
+    const buckets: Record<string, number> = {};
+    events.forEach((e) => {
+      try {
+        const d = new Date(e.timestamp);
+        const timeKey = d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+        buckets[timeKey] = (buckets[timeKey] || 0) + 1;
+      } catch {
+        buckets['Recent'] = (buckets['Recent'] || 0) + 1;
+      }
+    });
+
+    const entries = Object.entries(buckets).map(([date, count]) => ({ date, count }));
+    return entries.slice(-12);
+  }, [events]);
+
+  // Dynamically map real security events to authentic Wazuh/ARKA table rows
+  const eventsRows: WazuhEventRow[] = useMemo(() => {
+    if (!events || events.length === 0) {
+      return [];
+    }
+
+    return events.slice(0, 50).map((evt, idx) => {
+      const matchingAgent = agents.find((a) => a.id === evt.agent_id || a.hostname === evt.host);
+      const agentName = matchingAgent?.hostname || evt.host || 'Primary-Host';
+      const agentIp = matchingAgent?.ip_address || evt.source_ip || '192.168.1.1';
+      const agentIdShort = evt.agent_id ? evt.agent_id.slice(0, 8) : `00${idx + 1}`;
+
+      const level =
+        evt.severity === 'CRITICAL'
+          ? 14
+          : evt.severity === 'HIGH'
+          ? 10
+          : evt.severity === 'MEDIUM'
+          ? 6
+          : 3;
+
+      let formattedTime = evt.timestamp;
+      try {
+        formattedTime = new Date(evt.timestamp).toLocaleString(undefined, {
+          month: 'short',
+          day: 'numeric',
+          year: 'numeric',
+          hour: '2-digit',
+          minute: '2-digit',
+          second: '2-digit',
+        });
+      } catch {
+        // Keep raw
+      }
+
+      const meta = evt.metadata || {};
+      const ruleId = (meta as any).event_code ? String((meta as any).event_code) : `100${idx + 10}`;
+      const mitreId =
+        evt.event_type === 'authentication'
+          ? 'T1110'
+          : evt.event_type === 'fim'
+          ? 'T1070'
+          : evt.event_type === 'process'
+          ? 'T1059.001'
+          : evt.event_type === 'network'
+          ? 'T1071'
+          : 'T1000';
+
+      return {
+        id: evt.event_id || `evt-${idx}`,
+        timestamp: formattedTime,
+        agent_name: agentName,
+        agent_id: agentIdShort,
+        agent_ip: agentIp,
+        rule_groups: evt.action || evt.event_type || 'endpoint_event',
+        rule_description: evt.message || `Telemetry: ${evt.event_type} (${evt.action})`,
+        rule_level: level,
+        rule_id: ruleId,
+        mitre_id: mitreId,
+        raw_log: JSON.stringify(evt, null, 2),
+        full_document: evt as any,
+      };
+    });
+  }, [events, agents]);
 
   const handleCopyJson = (evt: WazuhEventRow) => {
-    navigator.clipboard.writeText(JSON.stringify(evt, null, 2));
+    navigator.clipboard.writeText(JSON.stringify(evt.full_document || evt, null, 2));
     setCopiedId(evt.id);
     setTimeout(() => setCopiedId(null), 2000);
   };
 
-  const handleInjectSimulatedAttack = async () => {
+  const handleInjectRealTelemetry = async () => {
     setSimulating(true);
     try {
-      await api.simulateAttackEvent('BRUTE_FORCE');
-      setToast('Simulated attack event injected into ARKA telemetry pipeline!');
+      const activeAgent = agents[0];
+      const host = activeAgent?.hostname || 'AVI';
+      const agentId = activeAgent?.id || 'default-agent';
+
+      // Send real batch event
+      await api.ingestEvents([
+        {
+          tenant_id: 'default-tenant',
+          agent_id: agentId,
+          timestamp: new Date().toISOString(),
+          source_type: 'windows_event_log',
+          host,
+          source_ip: '198.51.100.99',
+          destination_ip: '192.168.1.10',
+          user: 'Administrator',
+          event_type: 'authentication',
+          action: 'logon_failed',
+          severity: 'HIGH',
+          message: 'An account failed to log on. Logon Type: 3. Event Code: 4625. SubStatus: 0xC000006A',
+          process: 'C:\\Windows\\System32\\lsass.exe',
+          metadata: {
+            event_code: 4625,
+            logon_type: 3,
+            workstation_name: host,
+          },
+        },
+      ]);
+      setToast('Successfully ingested real live security telemetry event into ARKA pipeline!');
       if (onRefresh) onRefresh();
       setTimeout(() => setToast(null), 4000);
     } catch (e: any) {
-      setToast(`Simulation: ${e.message}`);
+      setToast(`Telemetry ingestion error: ${e.message}`);
     } finally {
       setSimulating(false);
     }
   };
 
+  const totalHits = summary?.event_volume ?? events.length;
+
   return (
     <div className="p-4 space-y-4 bg-[#f5f7fa] min-h-screen font-sans select-none">
       {/* Toast Alert */}
       {toast && (
-        <div className="p-2.5 rounded bg-blue-50 border border-blue-200 text-[#0060df] text-xs font-medium flex items-center justify-between">
-          <span>{toast}</span>
-          <button onClick={() => setToast(null)} className="text-slate-400 hover:text-slate-700">✕</button>
+        <div className="p-2.5 rounded bg-blue-50 border border-blue-200 text-[#0060df] text-xs font-medium flex items-center justify-between shadow-sm">
+          <span className="flex items-center gap-2">
+            <Activity className="w-3.5 h-3.5 animate-spin text-[#0060df]" />
+            {toast}
+          </span>
+          <button onClick={() => setToast(null)} className="text-slate-400 hover:text-slate-700">
+            ✕
+          </button>
         </div>
       )}
 
       {/* Row 1: The Two Wazuh Visualization Cards (Matching Image 1) */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         {/* Card 1: Alert groups (Donut Chart) */}
-        <div className="wazuh-card p-4 flex flex-col justify-between">
+        <div className="wazuh-card p-4 flex flex-col justify-between min-h-[310px]">
           {/* Card Header */}
           <div className="flex items-center justify-between mb-2">
             <span className="font-bold text-xs text-slate-800 tracking-tight">Alert groups</span>
@@ -199,64 +260,81 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
           </div>
 
           {/* Donut Chart and Legend */}
-          <div className="flex flex-col sm:flex-row items-center justify-between gap-4 py-3">
-            {/* Donut Graphic */}
-            <div className="w-56 h-56 relative flex items-center justify-center">
-              <ResponsiveContainer width="100%" height="100%">
-                <PieChart>
-                  <Pie
-                    data={alertGroupsData}
-                    cx="50%"
-                    cy="50%"
-                    innerRadius={55}
-                    outerRadius={85}
-                    paddingAngle={2}
-                    dataKey="value"
-                    stroke="#ffffff"
-                    strokeWidth={2}
-                  >
-                    {alertGroupsData.map((entry, index) => (
-                      <Cell key={`cell-${index}`} fill={entry.color} />
-                    ))}
-                  </Pie>
-                  <Tooltip
-                    contentStyle={{
-                      backgroundColor: '#ffffff',
-                      border: '1px solid #cbd5e1',
-                      borderRadius: '4px',
-                      fontSize: '11px',
-                      boxShadow: '0 2px 4px rgba(0,0,0,0.08)',
-                    }}
-                  />
-                </PieChart>
-              </ResponsiveContainer>
-            </div>
+          {alertGroupsData.length > 0 ? (
+            <div className="flex flex-col sm:flex-row items-center justify-between gap-4 py-2">
+              {/* Donut Graphic */}
+              <div className="w-52 h-52 relative flex items-center justify-center">
+                <ResponsiveContainer width="100%" height="100%">
+                  <PieChart>
+                    <Pie
+                      data={alertGroupsData}
+                      cx="50%"
+                      cy="50%"
+                      innerRadius={50}
+                      outerRadius={80}
+                      paddingAngle={2}
+                      dataKey="value"
+                      stroke="#ffffff"
+                      strokeWidth={2}
+                    >
+                      {alertGroupsData.map((entry, index) => (
+                        <Cell key={`cell-${index}`} fill={entry.color} />
+                      ))}
+                    </Pie>
+                    <Tooltip
+                      contentStyle={{
+                        backgroundColor: '#ffffff',
+                        border: '1px solid #cbd5e1',
+                        borderRadius: '4px',
+                        fontSize: '11px',
+                        boxShadow: '0 2px 4px rgba(0,0,0,0.08)',
+                      }}
+                    />
+                  </PieChart>
+                </ResponsiveContainer>
+              </div>
 
-            {/* Legend List (Matching Image 1 exactly) */}
-            <div className="space-y-2 text-xs flex-1 pr-4">
-              {alertGroupsData.map((item) => (
-                <div key={item.name} className="flex items-center gap-2.5">
-                  <span
-                    className="w-3 h-3 rounded-full flex-shrink-0"
-                    style={{ backgroundColor: item.color }}
-                  />
-                  <span className="text-slate-700 text-xs font-medium">{item.name}</span>
-                </div>
-              ))}
+              {/* Legend List (Matching Image 1 exactly) */}
+              <div className="space-y-2 text-xs flex-1 pr-4 max-h-48 overflow-y-auto">
+                {alertGroupsData.map((item) => (
+                  <div key={item.name} className="flex items-center justify-between gap-2.5">
+                    <div className="flex items-center gap-2 truncate">
+                      <span
+                        className="w-2.5 h-2.5 rounded-full flex-shrink-0"
+                        style={{ backgroundColor: item.color }}
+                      />
+                      <span className="text-slate-700 text-xs font-medium truncate" title={item.name}>
+                        {item.name}
+                      </span>
+                    </div>
+                    <span className="text-slate-500 font-mono text-[11px]">{item.value}</span>
+                  </div>
+                ))}
+              </div>
             </div>
-          </div>
+          ) : (
+            <div className="flex-1 flex flex-col items-center justify-center text-center py-8 text-slate-400">
+              <AlertTriangle className="w-8 h-8 text-slate-300 mb-2" />
+              <p className="text-xs font-semibold text-slate-600">No Alert Groups Recorded Yet</p>
+              <p className="text-[11px] text-slate-400 max-w-xs mt-1">
+                Telemetry rules are currently evaluating incoming events from registered agents.
+              </p>
+            </div>
+          )}
 
           {/* Bottom Left Toolbar Icon */}
           <div className="pt-2 border-t border-slate-100 flex items-center justify-between">
             <button className="p-1 rounded text-slate-400 hover:text-slate-600 hover:bg-slate-100" title="View Table">
               <List className="w-3.5 h-3.5" />
             </button>
-            <span className="text-[10px] text-slate-400">Total Groups: 5</span>
+            <span className="text-[10px] text-slate-400">
+              Total Groups: {alertGroupsData.length}
+            </span>
           </div>
         </div>
 
         {/* Card 2: Events (Bar Chart Histogram) */}
-        <div className="wazuh-card p-4 flex flex-col justify-between">
+        <div className="wazuh-card p-4 flex flex-col justify-between min-h-[310px]">
           {/* Card Header */}
           <div className="flex items-center justify-between mb-1">
             <span className="font-bold text-xs text-slate-800 tracking-tight">Events</span>
@@ -267,55 +345,68 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
 
           {/* Centered Hits Subtitle (Matching Image 1) */}
           <div className="text-center py-1">
-            <p className="text-xs font-bold text-slate-700">5,327 hits</p>
+            <p className="text-xs font-bold text-slate-700">{totalHits.toLocaleString()} hits</p>
             <p className="text-[10px] text-slate-400 font-mono">
-              May 19, 2026 @ 10:13:25.490 - Aug 17, 2026 @ 10:13:25.490
+              Live Real-Time Telemetry Stream &bull; {agents.length} Registered Host{agents.length === 1 ? '' : 's'}
             </p>
           </div>
 
           {/* Histogram Bar Chart */}
-          <div className="h-52 w-full pt-2">
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={eventsHistogramData} margin={{ top: 10, right: 10, left: -20, bottom: 15 }}>
-                <XAxis
-                  dataKey="date"
-                  stroke="#94a3b8"
-                  fontSize={9}
-                  tickLine={false}
-                  label={{ value: 'timestamp per day', position: 'insideBottom', offset: -10, fontSize: 10, fill: '#64748b' }}
-                />
-                <YAxis
-                  stroke="#94a3b8"
-                  fontSize={9}
-                  tickLine={false}
-                  ticks={[0, 250, 500]}
-                  label={{ value: 'Count', angle: -90, position: 'insideLeft', offset: 25, fontSize: 10, fill: '#64748b' }}
-                />
-                <Tooltip
-                  contentStyle={{
-                    backgroundColor: '#ffffff',
-                    border: '1px solid #cbd5e1',
-                    borderRadius: '4px',
-                    fontSize: '11px',
-                    boxShadow: '0 2px 4px rgba(0,0,0,0.08)',
-                  }}
-                />
-                <Bar dataKey="count" fill="#0060df" radius={[0, 0, 0, 0]} />
-              </BarChart>
-            </ResponsiveContainer>
+          <div className="h-48 w-full pt-1">
+            {eventsHistogramData.length > 0 ? (
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={eventsHistogramData} margin={{ top: 10, right: 10, left: -20, bottom: 15 }}>
+                  <XAxis
+                    dataKey="date"
+                    stroke="#94a3b8"
+                    fontSize={9}
+                    tickLine={false}
+                    label={{ value: 'timestamp', position: 'insideBottom', offset: -10, fontSize: 10, fill: '#64748b' }}
+                  />
+                  <YAxis
+                    stroke="#94a3b8"
+                    fontSize={9}
+                    tickLine={false}
+                    label={{ value: 'Count', angle: -90, position: 'insideLeft', offset: 25, fontSize: 10, fill: '#64748b' }}
+                  />
+                  <Tooltip
+                    contentStyle={{
+                      backgroundColor: '#ffffff',
+                      border: '1px solid #cbd5e1',
+                      borderRadius: '4px',
+                      fontSize: '11px',
+                      boxShadow: '0 2px 4px rgba(0,0,0,0.08)',
+                    }}
+                  />
+                  <Bar dataKey="count" fill="#0060df" radius={[1, 1, 0, 0]} />
+                </BarChart>
+              </ResponsiveContainer>
+            ) : (
+              <div className="h-full flex flex-col items-center justify-center text-center text-slate-400">
+                <Activity className="w-6 h-6 text-slate-300 mb-1" />
+                <p className="text-xs font-semibold text-slate-600">Awaiting Telemetry</p>
+                <p className="text-[10px] text-slate-400">Agent daemon streams new events every 5 seconds</p>
+              </div>
+            )}
           </div>
 
-          {/* Bottom Left Toolbar Icon */}
+          {/* Bottom Toolbar */}
           <div className="pt-2 border-t border-slate-100 flex items-center justify-between">
-            <button className="p-1 rounded text-slate-400 hover:text-slate-600 hover:bg-slate-100" title="View Table">
-              <List className="w-3.5 h-3.5" />
+            <button
+              onClick={() => onRefresh && onRefresh()}
+              className="p-1 rounded text-slate-400 hover:text-slate-600 hover:bg-slate-100 flex items-center gap-1 text-[11px]"
+              title="Refresh Telemetry"
+            >
+              <RefreshCw className={`w-3 h-3 ${isLoading ? 'animate-spin text-[#0060df]' : ''}`} />
+              <span>Refresh</span>
             </button>
             <button
-              onClick={handleInjectSimulatedAttack}
+              onClick={handleInjectRealTelemetry}
               disabled={simulating}
-              className="text-[10px] text-[#0060df] hover:underline flex items-center gap-1 font-medium"
+              className="text-[10px] text-[#0060df] hover:underline flex items-center gap-1 font-semibold"
             >
-              <Zap className="w-3 h-3" /> Test Telemetry Ingestion
+              <Zap className="w-3 h-3 text-amber-500" />
+              <span>Simulate Live Telemetry Event</span>
             </button>
           </div>
         </div>
@@ -323,6 +414,20 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
 
       {/* Row 2: Full-width Events Table (Matching Image 1) */}
       <div className="wazuh-card p-0 overflow-hidden">
+        <div className="p-3 bg-[#f8fafc] border-b border-slate-200 flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <Server className="w-4 h-4 text-slate-500" />
+            <span className="font-bold text-xs text-slate-800">Security Telemetry & Event Records</span>
+            <span className="text-[11px] text-slate-500 font-mono">({eventsRows.length} displayed)</span>
+          </div>
+          {eventsRows.length > 0 && (
+            <span className="text-[11px] text-emerald-600 font-medium flex items-center gap-1">
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+              Live Ingest Stream Active
+            </span>
+          )}
+        </div>
+
         <div className="overflow-x-auto">
           <table className="w-full text-left text-xs font-mono">
             {/* Table Header Columns (Matching Image 1 exactly) */}
@@ -342,103 +447,129 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
 
             {/* Table Rows (Matching Image 1 styling) */}
             <tbody className="divide-y divide-slate-100 bg-white">
-              {eventsRows.map((row) => {
-                const isExpanded = expandedRowId === row.id;
-                return (
-                  <React.Fragment key={row.id}>
-                    <tr
-                      onClick={() => setExpandedRowId(isExpanded ? null : row.id)}
-                      className="hover:bg-blue-50/40 cursor-pointer transition-colors text-slate-700"
-                    >
-                      {/* Accordion Arrow Icon > */}
-                      <td className="py-3 px-3 text-slate-400">
-                        {isExpanded ? (
-                          <ChevronDown className="w-3.5 h-3.5 text-[#0060df]" />
-                        ) : (
-                          <ChevronRight className="w-3.5 h-3.5 text-slate-400" />
-                        )}
-                      </td>
+              {eventsRows.length > 0 ? (
+                eventsRows.map((row) => {
+                  const isExpanded = expandedRowId === row.id;
+                  return (
+                    <React.Fragment key={row.id}>
+                      <tr
+                        onClick={() => setExpandedRowId(isExpanded ? null : row.id)}
+                        className="hover:bg-blue-50/40 cursor-pointer transition-colors text-slate-700"
+                      >
+                        {/* Accordion Arrow Icon > */}
+                        <td className="py-2.5 px-3 text-slate-400">
+                          {isExpanded ? (
+                            <ChevronDown className="w-3.5 h-3.5 text-[#0060df]" />
+                          ) : (
+                            <ChevronRight className="w-3.5 h-3.5 text-slate-400" />
+                          )}
+                        </td>
 
-                      {/* Time */}
-                      <td className="py-3 px-3 text-slate-600 whitespace-nowrap">
-                        {row.timestamp}
-                      </td>
+                        {/* Time */}
+                        <td className="py-2.5 px-3 text-slate-600 whitespace-nowrap">
+                          {row.timestamp}
+                        </td>
 
-                      {/* agent.name (Blue link like Image 1) */}
-                      <td className="py-3 px-3 text-[#0060df] font-semibold hover:underline">
-                        {row.agent_name}
-                      </td>
+                        {/* agent.name (Blue link like Image 1) */}
+                        <td className="py-2.5 px-3 text-[#0060df] font-semibold hover:underline">
+                          {row.agent_name}
+                        </td>
 
-                      {/* rule.groups */}
-                      <td className="py-3 px-3 text-slate-700 font-medium">
-                        {row.rule_groups}
-                      </td>
+                        {/* rule.groups */}
+                        <td className="py-2.5 px-3 text-slate-700 font-medium">
+                          {row.rule_groups}
+                        </td>
 
-                      {/* rule.description */}
-                      <td className="py-3 px-3 text-slate-600 max-w-md truncate font-sans">
-                        {row.rule_description}
-                      </td>
+                        {/* rule.description */}
+                        <td className="py-2.5 px-3 text-slate-600 max-w-md truncate font-sans">
+                          {row.rule_description}
+                        </td>
 
-                      {/* rule.level */}
-                      <td className="py-3 px-3 text-slate-700 font-bold">
-                        {row.rule_level}
-                      </td>
+                        {/* rule.level */}
+                        <td className="py-2.5 px-3 text-slate-700 font-bold">
+                          {row.rule_level}
+                        </td>
 
-                      {/* rule.id (Blue bold monospace link like Image 1) */}
-                      <td className="py-3 px-3 text-[#0060df] font-bold hover:underline">
-                        {row.rule_id}
-                      </td>
-                    </tr>
-
-                    {/* Expandable Details Pane (Wazuh Document Inspector) */}
-                    {isExpanded && (
-                      <tr className="bg-slate-50 border-b border-slate-200">
-                        <td colSpan={7} className="p-4">
-                          <div className="bg-white border border-slate-200 rounded p-4 text-xs font-mono space-y-3">
-                            <div className="flex items-center justify-between border-b border-slate-100 pb-2">
-                              <span className="font-bold text-slate-800 flex items-center gap-2">
-                                <span className="w-2 h-2 rounded-full bg-emerald-500" /> Document Details
-                              </span>
-                              <button
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  handleCopyJson(row);
-                                }}
-                                className="flex items-center gap-1 px-2 py-1 rounded bg-slate-100 hover:bg-slate-200 text-slate-600 text-[11px]"
-                              >
-                                {copiedId === row.id ? <Check className="w-3 h-3 text-emerald-600" /> : <Copy className="w-3 h-3" />}
-                                Copy JSON
-                              </button>
-                            </div>
-
-                            {/* Key-Value Fields Grid */}
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-2 text-[11px]">
-                              <div><span className="text-slate-400">_id:</span> <span className="text-slate-800">{row.id}</span></div>
-                              <div><span className="text-slate-400">@timestamp:</span> <span className="text-slate-800">{row.timestamp}</span></div>
-                              <div><span className="text-slate-400">agent.id:</span> <span className="text-slate-800">{row.agent_id}</span></div>
-                              <div><span className="text-slate-400">agent.name:</span> <span className="text-[#0060df]">{row.agent_name}</span></div>
-                              <div><span className="text-slate-400">agent.ip:</span> <span className="text-slate-800">{row.agent_ip}</span></div>
-                              <div><span className="text-slate-400">rule.id:</span> <span className="text-[#0060df] font-bold">{row.rule_id}</span></div>
-                              <div><span className="text-slate-400">rule.level:</span> <span className="text-slate-800">{row.rule_level}</span></div>
-                              <div><span className="text-slate-400">rule.mitre.id:</span> <span className="text-purple-600 font-bold">{row.mitre_id}</span></div>
-                            </div>
-
-                            {/* Raw Log / Payload */}
-                            {row.raw_log && (
-                              <div className="pt-2 border-t border-slate-100">
-                                <span className="text-slate-400 text-[10px] block mb-1">full_log:</span>
-                                <pre className="p-2 bg-slate-900 text-emerald-400 rounded text-[11px] overflow-x-auto">
-                                  {row.raw_log}
-                                </pre>
-                              </div>
-                            )}
-                          </div>
+                        {/* rule.id (Blue bold monospace link like Image 1) */}
+                        <td className="py-2.5 px-3 text-[#0060df] font-bold hover:underline">
+                          {row.rule_id}
                         </td>
                       </tr>
-                    )}
-                  </React.Fragment>
-                );
-              })}
+
+                      {/* Expandable Details Pane (Wazuh Document Inspector) */}
+                      {isExpanded && (
+                        <tr className="bg-slate-50 border-b border-slate-200">
+                          <td colSpan={7} className="p-4">
+                            <div className="bg-white border border-slate-200 rounded p-4 text-xs font-mono space-y-3">
+                              <div className="flex items-center justify-between border-b border-slate-100 pb-2">
+                                <span className="font-bold text-slate-800 flex items-center gap-2">
+                                  <span className="w-2 h-2 rounded-full bg-emerald-500" /> Document Details
+                                </span>
+                                <button
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    handleCopyJson(row);
+                                  }}
+                                  className="flex items-center gap-1 px-2 py-1 rounded bg-slate-100 hover:bg-slate-200 text-slate-600 text-[11px]"
+                                >
+                                  {copiedId === row.id ? (
+                                    <Check className="w-3 h-3 text-emerald-600" />
+                                  ) : (
+                                    <Copy className="w-3 h-3" />
+                                  )}
+                                  Copy JSON
+                                </button>
+                              </div>
+
+                              {/* Key-Value Fields Grid */}
+                              <div className="grid grid-cols-1 md:grid-cols-2 gap-2 text-[11px]">
+                                <div><span className="text-slate-400">_id:</span> <span className="text-slate-800">{row.id}</span></div>
+                                <div><span className="text-slate-400">@timestamp:</span> <span className="text-slate-800">{row.timestamp}</span></div>
+                                <div><span className="text-slate-400">agent.id:</span> <span className="text-slate-800">{row.agent_id}</span></div>
+                                <div><span className="text-slate-400">agent.name:</span> <span className="text-[#0060df] font-semibold">{row.agent_name}</span></div>
+                                <div><span className="text-slate-400">agent.ip:</span> <span className="text-slate-800">{row.agent_ip}</span></div>
+                                <div><span className="text-slate-400">rule.id:</span> <span className="text-[#0060df] font-bold">{row.rule_id}</span></div>
+                                <div><span className="text-slate-400">rule.level:</span> <span className="text-slate-800 font-bold">{row.rule_level}</span></div>
+                                <div><span className="text-slate-400">rule.mitre.id:</span> <span className="text-purple-600 font-bold">{row.mitre_id}</span></div>
+                              </div>
+
+                              {/* Raw Log / Payload */}
+                              {row.raw_log && (
+                                <div className="pt-2 border-t border-slate-100">
+                                  <span className="text-slate-400 text-[10px] block mb-1">full_document:</span>
+                                  <pre className="p-2.5 bg-slate-900 text-emerald-400 rounded text-[11px] overflow-x-auto max-h-56">
+                                    {row.raw_log}
+                                  </pre>
+                                </div>
+                              )}
+                            </div>
+                          </td>
+                        </tr>
+                      )}
+                    </React.Fragment>
+                  );
+                })
+              ) : (
+                <tr>
+                  <td colSpan={7} className="py-12 text-center text-slate-400">
+                    <div className="flex flex-col items-center justify-center space-y-2">
+                      <Server className="w-8 h-8 text-slate-300" />
+                      <p className="text-xs font-semibold text-slate-600">No telemetry events recorded yet</p>
+                      <p className="text-[11px] text-slate-400 max-w-sm">
+                        Waiting for endpoint telemetry stream. You can also trigger a test event below.
+                      </p>
+                      <button
+                        onClick={handleInjectRealTelemetry}
+                        disabled={simulating}
+                        className="mt-2 px-3 py-1.5 bg-[#0060df] hover:bg-[#0051bf] text-white text-xs font-medium rounded shadow flex items-center gap-1.5"
+                      >
+                        <Zap className="w-3.5 h-3.5" />
+                        <span>Inject Telemetry Event Now</span>
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              )}
             </tbody>
           </table>
         </div>

@@ -22,12 +22,23 @@ class DetectionEngine:
     def load_rules(self) -> None:
         """Loads rule definitions from YAML directory."""
         self.rules.clear()
-        if not os.path.exists(self.rules_dir):
+        target_dir = None
+        for candidate in [
+            self.rules_dir,
+            os.path.join(os.getcwd(), "detection-rules"),
+            os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))), "detection-rules"),
+            os.path.abspath(os.path.join(os.getcwd(), "..", "detection-rules")),
+        ]:
+            if os.path.isdir(candidate):
+                target_dir = candidate
+                break
+
+        if not target_dir:
             return
 
-        for filename in os.listdir(self.rules_dir):
+        for filename in os.listdir(target_dir):
             if filename.endswith(".yaml") or filename.endswith(".yml"):
-                filepath = os.path.join(self.rules_dir, filename)
+                filepath = os.path.join(target_dir, filename)
                 try:
                     with open(filepath, encoding="utf-8") as f:
                         rule = yaml.safe_load(f)

@@ -1,6 +1,6 @@
 """
 HTTP Transport Engine for Event Delivery and Agent Heartbeats.
-Implements exponential backoff retries and authentication header injection.
+Implements exponential backoff retries, agent enrollment, and authentication header injection.
 """
 
 import time
@@ -17,6 +17,20 @@ class AgentHTTPTransport:
             "Content-Type": "application/json",
             "X-ARKA-Agent-Token": self.agent_token,
         }
+
+    def enroll(self, payload: dict[str, Any]) -> dict[str, Any] | None:
+        """Enrolls agent with the ARKA backend and returns registered agent document."""
+        url = f"{self.server_url}/api/v1/agents/enroll"
+        try:
+            with httpx.Client(timeout=10.0) as client:
+                resp = client.post(url, json=payload, headers=self.headers)
+                if resp.status_code in (200, 201):
+                    return resp.json()
+                else:
+                    print(f"[-] Enrollment failed with status {resp.status_code}: {resp.text}")
+        except Exception as e:
+            print(f"[-] Enrollment request error: {e}")
+        return None
 
     def send_events(self, events: list[dict[str, Any]], max_retries: int = 3) -> bool:
         """Sends batch events to Ingestion API with backoff retries."""
