@@ -52,10 +52,10 @@ export const App: React.FC = () => {
       .catch(() => {
         setCurrentUser({
           id: 'dev-user-01',
-          full_name: 'Wazuh Administrator',
-          email: 'admin@wazuh.local',
+          full_name: 'Lead SOC Analyst',
+          email: 'analyst@arka-siem.org',
           role: 'ADMIN',
-          tenant_id: 'wazuh',
+          tenant_id: 'arka-soc',
         });
       });
   }, []);

@@ -166,7 +166,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
     setSimulating(true);
     try {
       await api.simulateAttackEvent('BRUTE_FORCE');
-      setToast('Simulated attack event injected into Wazuh pipeline!');
+      setToast('Simulated attack event injected into ARKA telemetry pipeline!');
       if (onRefresh) onRefresh();
       setTimeout(() => setToast(null), 4000);
     } catch (e: any) {

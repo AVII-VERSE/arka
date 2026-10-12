@@ -89,11 +89,11 @@ export const Sidebar: React.FC<SidebarProps> = ({
           {/* Drawer Header */}
           <div className="h-12 px-4 border-b border-slate-200 flex items-center justify-between">
             <div className="flex items-center gap-2">
-              <span className="font-extrabold text-lg text-slate-900">
-                W<span className="text-[#0060df]">.</span>
-              </span>
-              <span className="text-xs font-bold text-slate-700 uppercase tracking-wider">
-                ARKA Navigation
+              <div className="w-6 h-6 rounded bg-[#0060df] flex items-center justify-center text-white font-black text-xs font-mono shadow-xs">
+                A
+              </div>
+              <span className="font-extrabold text-sm text-slate-900 tracking-wider font-mono">
+                ARKA SIEM
               </span>
             </div>
             <button
